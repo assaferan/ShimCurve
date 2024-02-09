@@ -404,7 +404,7 @@ end intrinsic;
 intrinsic WriteSubgroupsDataToFile(file::IO, subs::SeqEnum[Rec])
 {Write the list of subgroup records to a file, without the header}
     for s in subs do 
-        gens_readable:= [ writeSeqEnum(Eltseq(g[1]`element) cat Eltseq(g[2])) : g in s`generators ];
+        gens_readable:= [ writeSeqEnum(Eltseq(O!g[1]`element) cat Eltseq(O!g[2])) : g in s`generators ];
 	perms_readable:=[ EncodePerm(p):  p in s`ram_data_elts];
 	
 	bad_primes := PrimeDivisors(s`discO * s`level);
