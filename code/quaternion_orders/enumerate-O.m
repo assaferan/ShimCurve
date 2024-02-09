@@ -141,17 +141,23 @@ intrinsic LMFDBRowEntry(O::AlgQuatOrd, mu::AlgQuatElt) -> MonStgElt
 
   is_cyclic := IsCyclic(Domain(AutmuO)) select "t" else "f";
   if IsCyclic(Domain(AutmuO)) then
-    AutmuO_generators := Sprint([ O!(AutmuO(Domain(AutmuO).1)`element) ]);
+    AutmuO_generators := [ Eltseq(O!(AutmuO(Domain(AutmuO).1)`element)) ];
   else 
-    AutmuO_generators := Sprint([ O!(AutmuO(Domain(AutmuO).i)`element) : i in [1,2] ]);
+    AutmuO_generators := [ Eltseq(O!(AutmuO(Domain(AutmuO).i)`element)) : i in [1,2] ];
   end if;
 
-  AutmuO_generators_str := ReplaceString(AutmuO_generators,"[","{");
+
+  AutmuO_generators_str := [ Sprintf("%o",lst) : lst in AutmuO_generators ];
+  AutmuO_generators_str := Sprint(AutmuO_generators_str);
+  AutmuO_generators_str := ReplaceString(AutmuO_generators_str,"[","{");
   AutmuO_generators_str := ReplaceString(AutmuO_generators_str,"]","}");
+  //AutmuO_generators_str := Sprintf("%o",AutmuO_generators);
 
   K,Kgen:=SemidirectToNormalizerKernel(O,mu);
-  Kgen := [ O!((Kgen`element)[1]`element), O!(Kgen`element[2]) ];
-  Kgen_str:=ReplaceString(Sprint(Kgen),"[","{");
+  Kgen := [ Eltseq(O!((Kgen`element)[1]`element)), Eltseq(O!(Kgen`element[2])) ];
+  Kgen_str := [ Sprintf("%o",lst) : lst in Kgen ];
+  Kgen_str := Sprint(Kgen_str);
+  Kgen_str:=ReplaceString(Sprint(Kgen_str),"[","{");
   Kgen_str:=ReplaceString(Kgen_str,"]","}");
 
 
