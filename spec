@@ -28,3 +28,7 @@ code
      enumerate-O.m
     }
   }
+FiniteGroups/Code
+  {
+    +spec
+  }

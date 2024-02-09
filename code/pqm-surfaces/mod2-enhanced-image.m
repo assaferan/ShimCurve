@@ -174,7 +174,8 @@ intrinsic EnhancedRepresentationMod2PQM(X::CrvHyp : prec:=30) -> Any
   tr,B:=IsQuaternionAlgebra(B2);
   //O:=MaximalOrder(QuaternionAlgebra(Discriminant(B)));
   O:=Universe(Codomain(mod2map))`quaternionorder;
-  Oenh:=EnhancedSemidirectProduct(O : N:=2);
+  _, mu := HasPrincipalPolarization(O, 1);
+  Oenh:=EnhancedSemidirectProduct(O, mu : N:=2);
 
   rho_enhanced:=map< Galgrp2 -> Oenh | sigma :-> < Bmod2modQx!(Bmap(restrict_rho_end(sigma)`element)), mod2map(sigma)>  >;
 

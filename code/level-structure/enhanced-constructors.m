@@ -19,13 +19,36 @@ declare attributes AlgQuatProjElt :
   parent;
 
 declare type AlgQuatEnh[AlgQuatEnhElt];
- 
+
 declare attributes AlgQuatEnh :
   quaternionalgebra,
   quaternionorder,
-  basering,
-  lhs,
-  rhs;
+  mu,
+  N,
+  basering, // Zmod(N)
+  lhs, // BxmodQx
+  rhs, // O/N
+
+  GL4sub, // Semidirect product as a subgroup of GL(4,Zmod(N))
+  AutmuO, // Aut_mu(O) as a PC group
+  AtoBx, // A -> B^x / Q^x (AutFull)
+  AtoGL4, // A -> GL(4,Zmod(N)) (Ahom)
+  Bxelts, // sequence of elements of Bx / Qx: the image of AtoBx
+
+  ONx, // (O/N)^x as a subgroup of GL(4,Zmod(N))
+
+  G1plus, // the index 2 subgroup of positive norm elements
+  NormalizerKernel, // The kernel of the map from the semidirect product to the normalizer in B^x of O
+  NormalizerKernelGL4, // The normalizer kernel, as a subgroup of GL(4, Z/NZ)
+  G1plusmodKG, // the quotient of the previous two attributes
+  G1plusmodKGmap, // the map from G1plus to the quotient
+  EllipticElements,
+  EllipticElementsGL4,
+  NormalizerPlusGenerators,
+
+  Lats; // Subgroup lattices, as an associative array indexed by N.
+  // Lats[N] only contains subgroups with surjective norm (and currently only the gerbiest ones),
+  // but there will be overlap since subgroups of level dividing N will be included (in order to get the containment relations correct)
 
 declare attributes AlgQuatEnhElt :
   element,
@@ -323,16 +346,18 @@ intrinsic QuaternionAlgebraModuloScalars(B::AlgQuat) -> AlgQuatProj
   return BxmodFx;
 end intrinsic;
 
-intrinsic EnhancedSemidirectProduct(O::AlgQuatOrd: N:=0) -> AlgQuatEnh
+intrinsic EnhancedSemidirectProduct(O::AlgQuatOrd, mu::AlgQuatElt : N:=0) -> AlgQuatEnh
   {create Autmu(O)\rtimesO^x or Autmu(O)\rtimes(O/N)^x}
   Ocirc:=New(AlgQuatEnh);
   Ocirc`quaternionorder:=O;
   B:=QuaternionAlgebra(O);
   Ocirc`quaternionalgebra:=B;
-  if N eq 0 then 
+  Ocirc`N:=N;
+  Ocirc`mu:=mu;
+  if N eq 0 then
     Ocirc`basering := Integers();
     Ocirc`rhs:=O;
-  else 
+  else
     Ocirc`basering:=ResidueClassRing(N);
     Ocirc`rhs:=quo(O,N);
   end if;
@@ -340,6 +365,159 @@ intrinsic EnhancedSemidirectProduct(O::AlgQuatOrd: N:=0) -> AlgQuatEnh
   Ocirc`lhs:=BxmodQx;
 
   return Ocirc;
+end intrinsic;
+
+
+intrinsic GL4sub(Enh::AlgQuatEnh) -> GrpMat
+{Returns the semidirect product as a subgroup of GL(4,Zmod(N))}
+    if not assigned Enh`GL4sub then
+        Enh`GL4sub, Enh`ONx, Enh`AtoGL4 := EnhancedImageGL4(Enh);
+    end if;
+    return Enh`GL4sub;
+end intrinsic;
+
+intrinsic ONx(Enh::AlgQuatEnh) -> GrpMat
+{Returns (O/N)^x as a subgroup of GL(4,Zmod(N))}
+    if not assigned Enh`ONx then
+        Enh`GL4sub, Enh`ONx, Enh`AtoGL4 := EnhancedImageGL4(Enh);
+    end if;
+    return Enh`ONx;
+end intrinsic;
+
+intrinsic AtoGL4(Enh::AlgQuatEnh) -> GrpHom
+{Returns the inclusion A -> GL(4,Zmod(N)), where A is the PC group Aut_mu(O)}
+    if not assigned Enh`AtoGL4 then
+        Enh`GL4sub, Enh`ONx, Enh`AtoGL4 := EnhancedImageGL4(Enh);
+    end if;
+    return Enh`AtoGL4;
+end intrinsic;
+
+intrinsic G1plus(Enh::AlgQuatEnh) -> GrpMat
+{Returns the index-2 subgroup of positive norm elements}
+    if assigned Enh`G1plus then return Enh`G1plus; end if;
+    t0 := Cputime();
+    O := Enh`quaternionorder;
+    mu := Enh`mu;
+    N := Enh`N;
+    G := GL4sub(Enh);
+    NBOplusgens_enhanced := NormalizerPlusGenerators(Enh);
+    NBOplusgensGL4 := [ EnhancedElementInGL4(g) : g in NBOplusgens_enhanced ];
+    G1plus := sub< G | NBOplusgensGL4 >;
+    assert #G/#G1plus eq 2;
+    Enh`G1plus := G1plus;
+    vprint User1: "G1plus", Cputime() - t0;
+    return G1plus;
+end intrinsic;
+
+intrinsic NormalizerKernel(Enh::AlgQuatEnh) -> SeqEnum[AlgQuatEnh]
+{return the kernel of the map form the enhanced semidirect product to N_B^x(O).
+  It is necessarily cyclic and the second value is the generator of the group}
+    if not assigned Enh`NormalizerKernel then
+        B := Enh`quaternionalgebra;
+        O := Enh`quaternionorder;
+        autmuOseq := Bxelts(Enh);
+        Oxcyc := [ (1/Integers()!Sqrt(Norm(a`element)))*a`element : a in autmuOseq | IsSquare(Norm(a`element)) ];
+        ker := [ Enh!<x,x^-1> : x in Oxcyc ];
+        assert #ker in [1,2,3];
+        assert &and[Norm(e) eq 1 : e in Oxcyc];
+        if #ker eq 1 then
+            assert ker[1] eq Enh!<B!1,O!1> or ker[1] eq Enh!<B!1,-O!1>;
+            Enh`NormalizerKernel := [ Enh!<B!1,O!1>, Enh!<B!1,-O!1> ];
+        else
+            gen := [ e : e in ker | Order(e) eq 2 * #ker ];
+            assert #gen eq 1;
+            gen := gen[1];
+            newker := [ gen^i : i in [0..Order(gen) - 1] ];
+            // assert #Set(newker) eq Order(gen);
+            //assert its cyclic in GL4
+            Enh`NormalizerKernel := newker;
+        end if;
+    end if;
+    return Enh`NormalizerKernel;
+end intrinsic;
+
+intrinsic NormalizerKernelGen(Enh::AlgQuatEnh) -> AlgQuatEnh
+{The generator of the normalizer kernel}
+    return NormalizerKernel(Enh)[2];
+end intrinsic;
+
+intrinsic NormalizerKernelGL4(Enh::AlgQuatEnh) -> GrpMat
+{The kernel of the map from the semidirect product to the normalizer in B^x of O, as a subgroup of GL(4,Zmod(N))}
+    if not assigned Enh`NormalizerKernelGL4 then
+        t0 := Cputime();
+        O := Enh`quaternionorder;
+        K := NormalizerKernel(Enh);
+        Enh`NormalizerKernelGL4 := sub< G1plus(Enh) | [ EnhancedElementInGL4(k) : k in K ] >;
+        assert #(Enh`NormalizerKernelGL4) eq #K;
+        vprint User1: "NormalizerKernelGL4", Cputime() - t0;
+    end if;
+    return Enh`NormalizerKernelGL4;
+end intrinsic;
+
+intrinsic G1plusmodKG(Enh::AlgQuatEnh) -> GrpPerm // TODO: worry about what happens if this quotient is too big
+{The quotient of the positive norm elements by the kernel of the map to the normalizer}
+    if not assigned Enh`G1plusmodKG then
+        Enh`G1plusmodKG, Enh`G1plusmodKGmap := quo<G1plus(Enh) | NormalizerKernelGL4(Enh)>;
+    end if;
+    return Enh`G1plusmodKG;
+end intrinsic;
+
+intrinsic G1plusmodKGmap(Enh::AlgQuatEnh) -> HomGrp
+{The projection map from the positive norm elements to its quotient by the kernel of the map to the normalizer}
+    if not assigned Enh`G1plusmodKGmap then
+        Enh`G1plusmodKG, Enh`G1plusmodKGmap := quo<G1plus(Enh) | NormalizerKernelGL4(Enh)>;
+    end if;
+    return Enh`G1plusmodKGmap;
+end intrinsic;
+
+intrinsic AutmuO(Enh::AlgQuatEnh) -> GrpPC
+{The abstract group Aut_mu(O), either cyclic or dihedral}
+    if not assigned Enh`AutmuO then
+        Enh`AutmuO := Domain(AtoBx(Enh));
+    end if;
+    return Enh`AutmuO;
+end intrinsic;
+
+intrinsic AtoBx(Enh::AlgQuatEnh) -> Map
+{The map A -> B^x / Q^x, where A is Aut_mu(O) as an abstract group}
+    if not assigned Enh`AtoBx then
+        Enh`AtoBx := Aut(Enh`quaternionorder, Enh`mu);
+    end if;
+    return Enh`AtoBx;
+end intrinsic;
+
+intrinsic Bxelts(Enh::AlgQuatEnh) -> SeqEnum
+{The image of AtoBx as a sequence of elements}
+    if not assigned Enh`Bxelts then
+        Bxhom := AtoBx(Enh);
+        Enh`Bxelts := [Bxhom(a) : a in Domain(Bxhom)];
+    end if;
+    return Enh`Bxelts;
+end intrinsic;
+
+intrinsic EllipticElements(Enh::AlgQuatEnh) -> SeqEnum
+{The elliptic elements}
+    // TODO: This is currently the same as NormalizerPlusGenerators(Enh)
+    if not assigned Enh`EllipticElements then
+        B := Enh`quaternionalgebra;
+        O := Enh`quaternionorder;
+        Enh`EllipticElements := [Enh!NormalizerToAutmuO(Enh, B!a) : a in NormalizerPlusGenerators(O)];
+    end if;
+    return Enh`EllipticElements;
+end intrinsic;
+
+intrinsic EllipticElementsGL4(Enh::AlgQuatEnh) -> SeqEnum
+{The elliptic elements of the associated Shimura curve as elements in GL4(Z/NZ)}
+    if not assigned Enh`EllipticElementsGL4 then
+        t0 := Cputime();
+        N := Enh`N;
+        elliptic_elements_enhanced := EllipticElements(Enh);
+        //assert forall(u){ <u,v> : u,v in elliptic_elements_enhanced |
+        //    EnhancedElementInGL4(u)*EnhancedElementInGL4(v) eq EnhancedElementInGL4(u*v) };
+        Enh`EllipticElementsGL4 := [ EnhancedElementInGL4(e) : e in elliptic_elements_enhanced ];
+        vprint User1: "EllipticElementsGL4", Cputime() - t0;
+    end if;
+    return Enh`EllipticElementsGL4;
 end intrinsic;
 
 intrinsic IsCoercible(OmodN::AlgQuatOrdRes, x::Any) -> BoolElt, .

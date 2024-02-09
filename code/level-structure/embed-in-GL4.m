@@ -229,57 +229,24 @@ end intrinsic;
 
 
 
-intrinsic EnhancedSemidirectInGL4(Ocirc::AlgQuatEnh) -> Map 
+intrinsic EnhancedSemidirectInGL4(Enh::AlgQuatEnh) -> Map 
   {create the map from the semidirect product to GL4(R). R depends on the base 
-  ring of Ocirc.}
+  ring of Enh.}
 
-  O:=Ocirc`quaternionorder;
-  R:=Ocirc`basering;
+  O:=Enh`quaternionorder;
+  R:=Enh`basering;
   GL4:=GL(4,R);
   if Type(R) eq RngInt then 
-    mapfromenhancedimage := map<  Ocirc -> GL4  |  
+    mapfromenhancedimage := map<  Enh -> GL4  |  
     s :-> NormalizingElementToGL4((s`element)[1], O)*UnitGroupToGL4((s`element)[2])  >;
   else 
     N:=Modulus(R);
-    mapfromenhancedimage := map<  Ocirc -> GL4  |  
+    mapfromenhancedimage := map<  Enh -> GL4  |  
     s :-> NormalizingElementToGL4modN((s`element)[1],O,N)*UnitGroupToGL4modN(((s`element)[2])`element,N)  >;
   end if;
 
   return mapfromenhancedimage;
 end intrinsic;
-
-
-intrinsic EnhancedSemidirectInGL4(O::AlgQuatOrd) -> Map 
-  {create the map from the semidirect product to GL4(R). R depends on the base 
-  ring of Ocirc}
-
-  Ocirc:=EnhancedSemidirectProduct(O);
-  return EnhancedSemidirectInGL4(Ocirc);
-end intrinsic;
-
-
-
-intrinsic EnhancedSemidirectInGL4modN(Ocirc::AlgQuatEnh,N::RngIntElt) -> Map 
-  {create the map from the semidirect product to GL4(Z/NZ)}
-
-  O:=Ocirc`quaternionorder;
-
-  ZmodN:=ResidueClassRing(N);
-  GL4:=GL(4,ZmodN);
-  mapfromenhancedimage := map<  Ocirc -> GL4  |  
-    s :-> GL4!(NormalizingElementToGL4((s`element)[1],O)*UnitGroupToGL4((s`element)[2]))  >;
-  
-  return mapfromenhancedimage;
-end intrinsic;
-
-
-intrinsic EnhancedSemidirectInGL4modN(O::AlgQuatOrd,N::RngIntElt) -> Map 
-  {create the map from the semidirect product to GL4(Z/NZ)}
-
-  Ocirc:=EnhancedSemidirectProduct(O : N:=N);
-  return EnhancedSemidirectInGL4modN(Ocirc,N);
-end intrinsic;
-
 
 
 
@@ -290,17 +257,6 @@ intrinsic EnhancedElementInGL4(g::AlgQuatEnhElt) -> GrpMatElt
   map:=EnhancedSemidirectInGL4(Ocirc);
   return map(g);
 end intrinsic;
-
-intrinsic EnhancedElementInGL4modN(g::AlgQuatEnhElt,N::RngIntElt) -> GrpMatElt
-  {the enhanced element in GL4}
-
-  Ocirc:=Parent(g);
-  map:=EnhancedSemidirectInGL4modN(Ocirc,N);
-  return map(g);
-end intrinsic;
-
-
-
 
 
 intrinsic EnhancedImagePermutation(AutmuO::Map,OmodN::AlgQuatOrdRes) -> Grp 
@@ -370,27 +326,29 @@ intrinsic GL4ToEnhanced(g::GrpMatElt, O::AlgQuatOrd) -> AlgQuatEnhElt
     M4R := MatrixAlgebra(R,4);
 end intrinsic;
 
-intrinsic EnhancedImageGL4(AutmuO::Map, OmodN::AlgQuatOrdRes) -> GrpMat, GrpMat, HomGrp
+intrinsic EnhancedImageGL4(Enh::AlgQuatEnh) -> GrpMat, GrpMat, HomGrp
   {return
    - the image of the enhanced semidirect product group G in GL4(Z/NZ)
    - the image of just (O/N)^x inside GL4(Z/NZ)
    - the homomorphism from the domain of AutmuO to this image.}
 
-  O:=OmodN`quaternionorder;
-  N:=OmodN`quaternionideal;
-  Ocirc:=EnhancedSemidirectProduct(O: N:=N);
-  A:=Domain(AutmuO);
+  t0 := Cputime();
+  homtoB := AtoBx(Enh);
+  O:=Enh`quaternionorder;
+  N:=Enh`N;
+  A := AutmuO(Enh);
   ZmodN:=ResidueClassRing(N);
   GL4 := GL(4, ZmodN);
   Angen := NumberOfGenerators(A);
-  AinGL4 := [NormalizingElementToGL4modN(AutmuO(A.i)`element,O,N) : i in [1..Angen]];
+  AinGL4 := [NormalizingElementToGL4modN(homtoB(A.i)`element,O,N) : i in [1..Angen]];
   Ahom := hom<A -> GL4 |[<A.i, AinGL4[i]> : i in [1..Angen]]>;
 
-  ONx, phi:= UnitGroup(OmodN);
+  ONx, phi:= UnitGroup(Enh`rhs);
   ONxgens := [ONx.i : i in [1..NumberOfGenerators(ONx)]];
 
   semidirGL4 := sub<GL4 | ONxgens cat AinGL4>;
 
+  vprint User1: "EnhancedImageGL4", Cputime() - t0;
   return semidirGL4, ONx, Ahom;
 
   /*
@@ -423,37 +381,6 @@ intrinsic EnhancedImageGL4(AutmuO::Map, OmodN::AlgQuatOrdRes) -> GrpMat, GrpMat,
   return semidirGL4;
   */
 end intrinsic;
-
-
-intrinsic EnhancedImageGL4(AutmuO::Map, O::AlgQuatOrd, N::RngIntElt) -> GrpMat, GrpMat, HomGrp
-  {return the image of the enhanced semidirect product group G in GL4(Z/NZ). The second return value
-  is a list of enhanced elements in record format.}
-
-  OmodN:=quo(O,N);
-  return EnhancedImageGL4(AutmuO, OmodN);
-end intrinsic;
-
-
-intrinsic EnhancedImageGL4(O::AlgQuatOrd, mu::AlgQuatElt, N::RngIntElt) -> GrpMat, GrpMat, HomGrp
-  {return the image of the enhanced semidirect product group G in GL4(Z/NZ). The second return value
-  is a list of enhanced elements in record format.}
-
-  AutmuO:=Aut(O,mu);
-  assert MapIsHomomorphism(AutmuO);
-  OmodN:=quo(O,N);
-  return EnhancedImageGL4(AutmuO, OmodN);
-end intrinsic;
-
-intrinsic EnhancedImageGL4(O::AlgQuatOrd, mu::AlgQuatOrdElt, N::RngIntElt) -> GrpMat, GrpMat, HomGrp
-  {return the image of the enhanced semidirect product group G in GL4(Z/NZ). The second return value
-  is a list of enhanced elements in record format.}
-
-  AutmuO:=Aut(O,mu);
-  assert MapIsHomomorphism(AutmuO);
-  OmodN:=quo(O,N);
-  return EnhancedImageGL4(AutmuO, OmodN);
-end intrinsic;
-
 
 
 intrinsic AutmuOinGL4modN(AutmuO::Map,O::AlgQuatOrd,N::RngIntElt) -> GrpMat

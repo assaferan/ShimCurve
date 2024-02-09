@@ -1,3 +1,6 @@
+// WARNING: This file has not been updated to account for code refactoring
+
+
 /*
 s:=GeneraTableToRecords(6,1,4 : torsioninvariants:=[2], genus:=0, endogroup:=" C2 ", sort:=true)[1];
 

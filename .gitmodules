@@ -1,0 +1,3 @@
+[submodule "FiniteGroups"]
+	path = FiniteGroups
+	url = https://github.com/roed314/FiniteGroups.git
