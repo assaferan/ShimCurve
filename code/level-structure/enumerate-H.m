@@ -475,7 +475,7 @@ intrinsic WriteSubgroupsDataToFile(file::IO, subs::SeqEnum[Rec], O::AlgQuatOrd)
 		       "\\N",
 		       "\\N",
 		       "\\N",
-		       "\\N",
+		       s`psl2label,
 		       "\\N",
 		       writeSeqEnum(q_gon_bounds),
 		       "\\N",
