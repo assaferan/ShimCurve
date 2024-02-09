@@ -33,7 +33,7 @@ intrinsic X0DNdata(DBound::RngIntElt, NBound::RngIntElt) -> Any
             discO:=D*N;
             fine_label:=coarse_label;
             fine_num:="\\N";
-            fuchsian_index:="\\N"; // the Index(Gamma) command doesn't work right away.. 
+            fuchsian_index:=size_AutmuO; // Double check that this is the correct index
             galEnd:="\\N";
             generators:="\\N";
             // genus:=Genus(Gamma); // moved to before coarse_label which includes genus
