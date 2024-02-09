@@ -401,7 +401,7 @@ intrinsic WriteHeaderToFile(file::IO)
     return;
 end intrinsic;
 
-intrinsic WriteSubgroupsDataToFile(file::IO, subs::SeqEnum[Rec])
+intrinsic WriteSubgroupsDataToFile(file::IO, subs::SeqEnum[Rec], O::AlgQuatOrd)
 {Write the list of subgroup records to a file, without the header}
     for s in subs do 
         gens_readable:= [ writeSeqEnum(Eltseq(O!g[1]`element) cat Eltseq(O!g[2])) : g in s`generators ];
@@ -496,13 +496,13 @@ intrinsic WriteSubgroupsDataToFile(file::IO, subs::SeqEnum[Rec])
     return;
 end intrinsic;
 
-intrinsic WriteHeaderAndSubgroupsDataToFile(subs::SeqEnum[Rec])
+intrinsic WriteHeaderAndSubgroupsDataToFile(subs::SeqEnum[Rec], O::AlgQuatOrd)
 {Write the list of subgroup records to a file, together with the header.}
     assert #subs gt 0;
     filename:=Sprintf("data/genera-tables/genera-D%o-deg%o-N%o.m",subs[1]`discO,subs[1]`deg_mu,subs[1]`level);
     file := Open(filename, "w");
     WriteHeaderToFile(file);
-    WriteSubgroupsDataToFile(file, subs);
+    WriteSubgroupsDataToFile(file, subs, O);
     return;
 end intrinsic;
 
