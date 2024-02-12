@@ -44,11 +44,7 @@ declare attributes AlgQuatEnh :
   G1plusmodKGmap, // the map from G1plus to the quotient
   EllipticElements,
   EllipticElementsGL4,
-  NormalizerPlusGenerators,
-
-  Lats; // Subgroup lattices, as an associative array indexed by N.
-  // Lats[N] only contains subgroups with surjective norm (and currently only the gerbiest ones),
-  // but there will be overlap since subgroups of level dividing N will be included (in order to get the containment relations correct)
+  NormalizerPlusGenerators;
 
 declare attributes AlgQuatEnhElt :
   element,
@@ -59,7 +55,7 @@ intrinsic OmodNElement(OmodN::AlgQuatOrdRes, x::AlgQuatOrdElt) -> AlgQuatOrdResE
   elt := New(AlgQuatOrdResElt);
   elt`element := x;
   elt`parent := OmodN;
-  
+
   return OmodN!elt;
 end intrinsic;
 

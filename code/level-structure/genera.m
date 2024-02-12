@@ -1,6 +1,5 @@
 
 
-
 intrinsic EnhancedGenus(sigma::SeqEnum) -> RngIntElt
   {Compute genus from permutation triple
    f:X -> Y. 2gX-2 = deg(f)*(2gY-2) + sum_x\inX (ex -1). 
@@ -14,3 +13,26 @@ intrinsic EnhancedGenus(sigma::SeqEnum) -> RngIntElt
   g := Integers()!((rhs+2)/2);
   return g;
 end intrinsic;
+
+intrinsic EnhancedEllipticPoints(sigma::SeqEnum) -> Assoc
+{Only works for discriminant 6!}
+  ells := AssociativeArray([2,3,4,6]);
+  for n in [2,3,4,6] do
+      ells[n] := 0;
+  end for;
+  // sigma is ordered as the cycles above 2, 4, 6
+  bottom := [2,4,6];
+  for i->sig in sigma do
+      for e in CycleStructure(sig) do
+	  n := bottom[i] div e[1];
+	  if (n gt 1) then
+	      assert IsDefined(ells, n);
+	      ells[n] +:= e[2];
+	  end if;
+      end for;
+  end for;
+  return ells;
+end intrinsic;
+
+
+

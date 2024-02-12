@@ -10,13 +10,13 @@ intrinsic Aut(O::AlgQuatOrd,mu::AlgQuatElt) -> Map
   sqeta,c:=SquarefreeFactorization(eta);
   Em<v>:=NumberField(x^2-sqeta);
   //Rm:=Order([1,v]);
-  cyc,Czeta,zeta:=IsCyclotomic(Em);
+  cyclo,Czeta,zeta:=IsCyclotomic(Em);
   //Zzeta:=Integers(Czeta);
 
   B:=QuaternionAlgebra(O);
   BxmodQx:=QuaternionAlgebraModuloScalars(B);
 
-  if cyc then
+  if cyclo then
     //sqeta,c:=SquarefreeFactorization(eta);
     assert sqeta in {-1,-3};
     if sqeta eq -1 then
@@ -35,19 +35,19 @@ intrinsic Aut(O::AlgQuatOrd,mu::AlgQuatElt) -> Map
   if IsTwisting(O,mu) then
     tr,muchi:=IsTwisting(O,mu);
     b:=B!(muchi[2]);
-    if cyc then
+    if cyclo then
       Dn<w_chi,w_mu>:=DihedralGroup(GrpPC, cyc_order); // FIXME: there will be another generator for D4 and D6 since magma uses prime relative orders
     else
       Dn<w_chi,w_mu>:=Group("C2^2");
     end if;
     Dngens:=Generators(Dn);
-    assert #Dngens eq 2;
-    assert Order(Dn.1) eq #Dn/2;
-    assert Order(Dn.2) eq 2;
-    elts:= [ <Dn.1^l*Dn.2^k, BxmodQx!(a^l*b^k)> : l in [0..cyc_order-1], k in [0..1] ];
+    //assert #Dngens eq 2;
+    assert Order(Dn.2) eq #Dn/2;
+    assert Order(Dn.1) eq 2;
+    elts:= [ <Dn.1^k*Dn.2^l, BxmodQx!(b^k*a^l)> : l in [0..cyc_order-1], k in [0..1] ];
     grp_map:=map< Dn -> BxmodQx | elts >;
   else
-    if cyc then
+    if cyclo then
       Cn<w_mu>:=CyclicGroup(GrpPC, cyc_order); // FIXME: this will be a problem for C4 and C6
     else
       Cn<w_mu>:=CyclicGroup(GrpPC, 2);
