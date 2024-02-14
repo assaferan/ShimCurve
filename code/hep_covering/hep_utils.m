@@ -382,3 +382,30 @@ PrintDomain := procedure(deltas, D);
   printf "\\pscircle(0,0){1}\n\\end{pspicture}\n\\end{center}\n\n\\end{document}\n";
 end procedure;
 */
+
+HepCoveringPicture := procedure(O);
+    B := QuaternionAlgebra(O);
+    G := FuchsianGroup(B);
+    d := 5;
+    while true do
+        if IsFundamentalDiscriminant(-d) then
+            try
+                ZK := Integers(QuadraticField(-d));
+                nu := Embed(ZK,O);
+                break;
+            catch e;
+                d := d+1;
+            end try;
+        else
+            d := d+1;
+        end if;
+    end while;
+    z := FixedPoints(G!nu, UpperHalfPlane())[1];
+    DD := UnitDisc(:Center:=z);
+    fd := FundamentalDomain(G,DD);
+    _ := Group(G);
+    _ := HeptagonalCovering(G,z);
+    L1 := [x[3] : x in G`HeptCoverCenters];
+    L2 := HyperbolicToEuclideanCircle(L1,r_hept);
+    PrintFDCovering(L2,G,DD);
+end procedure;
