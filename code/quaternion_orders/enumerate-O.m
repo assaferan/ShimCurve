@@ -23,6 +23,16 @@ intrinsic LMFDBLabel(O::AlgQuatOrd) -> MonStgElt
 end intrinsic;
 
 
+intrinsic Area(O::AlgQuatOrd) -> FldRatElt
+  {Compute the Area of X_O}
+  assert IsMaximal(O);
+
+  D:=Discriminant(QuaternionAlgebra(O));
+  area:=EulerPhi(D)/6;
+  return area;
+end intrinsic;
+
+
 intrinsic LMFDBRowEntry(O::AlgQuatOrd) -> MonStgElt
   {return the row of data associated to O which will become part of the LMFDB schema.
   The schema is (for O maximal):
@@ -48,12 +58,15 @@ intrinsic LMFDBRowEntry(O::AlgQuatOrd) -> MonStgElt
   gensOijk_integral_str := Sprint(gensOijk_integral_str);
   gensOijk_integral_str := ReplaceString(gensOijk_integral_str,"[","{");
   gensOijk_integral_str := ReplaceString(gensOijk_integral_str,"]","}");
-  
 
+  areaO := Area(O);
+  area_numerator:=Numerator(areaO);
+  area_denominator := Denominator(areaO);
+  
   label:=LMFDBLabel(O);
   a,b:=StandardForm(B);
 
-  return Sprintf("%o?%o?%o?%o?%o?%o?%o",label,a,b,D,d,gensOijk_integral_str,denominatorsLCM_str);
+  return Sprintf("%o?%o?%o?%o?%o?%o?%o?%o?%o",label,a,b,D,d,gensOijk_integral_str,denominatorsLCM_str,area_numerator,area_denominator);
 end intrinsic;
 
 

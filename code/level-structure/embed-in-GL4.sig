@@ -1,0 +1,39 @@
+177,0
+S,ElementToAutomorphismModN,a in B^x becomes an automorphism of (O/N)^x by considering the map a |-> (x|-> a^-1xa) as long as a in N_B^x(O). We apply this to (O/N)^x as a permutation group,0,2,0,0,0,0,0,0,0,AlgQuatOrdRes,,0,0,18,,33,-38,-38,-38,-38,-38
+S,ElementToAutomorphismModN,a in B^x becomes an automorphism of (O/N)^x by considering the map a |-> (x|-> a^-1xa) as long as a in N_B^x(O). We apply this to (O/N)^x as a permutation group,0,3,0,0,0,0,0,0,0,148,,0,0,19,,0,0,18,,33,-38,-38,-38,-38,-38
+S,AutomorphismsModN,"Given a subset of Aut(O) input as a finite subset S of B^x, create the map theta : S -> Aut((O/N)^x)",1,0,1,83,0,AlgQuatProjElt,2,0,0,0,0,0,0,0,AlgQuatOrdRes,,0,0,83,,175,-38,-38,-38,-38,-38
+S,AutomorphismsModN,"Given a subset of Aut(O) input as a finite subset S of B^x, create the map theta : S -> Aut((O/N)^x)",1,0,1,83,0,AlgQuatProjElt,3,0,0,0,0,0,0,0,148,,0,0,19,,0,0,83,,175,-38,-38,-38,-38,-38
+S,NormalizingElementToGL4,O is an order over R. For an element g in N_Bx(O) the map phi_g : b |--> g^-1bg is R-linear hence [g] is an element of M_4(R) after fixing a basis this function computes [g] and also returns the R-basis of O,0,2,0,0,0,0,0,0,0,19,,0,0,18,,180,-38,-38,-38,-38,-38
+S,NormalizingElementToGL4,O is an order over R. For an element g in N_Bx(O) the map phi_g : b |--> g^-1bg is R-linear hence [g] is an element of M_4(R) after fixing a basis this function computes [g] and also returns the R-basis of O,0,2,0,0,0,0,0,0,0,19,,0,0,AlgQuatProjElt,,180,-38,-38,-38,-38,-38
+S,NormalizingElementToGL4modN,O is an order over R. For an element g in N_Bx(O) the map phi_g : b |--> g^-1bg is R-linear hence [g] is an element of M_4(R) after fixing a basis this function computes [g] and also returns the R-basis of O,0,3,0,0,0,0,0,0,0,148,,0,0,19,,0,0,18,,180,-38,-38,-38,-38,-38
+S,NormalizingElementToGL4modN,O is an order over R. For an element g in N_Bx(O) the map phi_g : b |--> g^-1bg is R-linear hence [g] is an element of M_4(R) after fixing a basis this function computes [g] and also returns the R-basis of O,0,3,0,0,0,0,0,0,0,148,,0,0,19,,0,0,AlgQuatProjElt,,180,-38,-38,-38,-38,-38
+S,Random,Random element of O/N,0,1,0,0,0,0,0,0,0,AlgQuatOrdRes,,AlgQuatOrdResElt,-38,-38,-38,-38,-38
+S,UnitGroupOrder,The cardinality of (O/N)^x,0,1,0,0,0,0,0,0,0,AlgQuatOrdRes,,148,-38,-38,-38,-38,-38
+S,UnitGroupGens,Generators for (O/N)^x,0,1,0,0,0,0,0,0,0,AlgQuatOrdRes,,82,82,-38,-38,-38,-38
+S,UnitGroupToGL4,"O is an order over R, this returns a matrix [lambda_g] wrt to a basis which is the right regular representation lambda_x : y --> y*x where g in GL_1(O)",0,1,0,0,0,0,0,0,0,20,,177,-38,-38,-38,-38,-38
+S,GL4ToUnitGroup,"The inverse of the above map: given a 4x4 matrix in the regular representation of O/N, return a corresponding element of O",0,2,0,0,0,0,0,0,0,19,,0,0,177,,20,-38,-38,-38,-38,-38
+S,GL4ToUnitGroup,"The inverse of the above map: given a 4x4 matrix in the regular representation of O/N, return the corresponding element of O",0,2,0,0,0,0,0,0,0,19,,0,0,180,,20,-38,-38,-38,-38,-38
+S,inONx,"Test whether an element of Mat(4,Z/N) is in the image of (O/N) under the regular representation",0,2,0,0,0,0,0,0,0,19,,0,0,177,,36,-38,-38,-38,-38,-38
+S,GL4ToPair,"Given an element x in the image of Aut_mu(O) ltimes (O/N)^x within GL(4,Z/N), the quaternion order O, and the map from Aut_mu(O) to GL(4,Z/N), returns the decomposition of x into a pair arising from the semidirect product: - an element of the domain of Ahom (an abstract group C_n or Dn) - an element of O",0,3,0,0,0,0,0,0,0,141,,0,0,19,,0,0,180,,303,-38,-38,-38,-38,-38
+S,UnitGroupToGL4,"O is an order over R, this returns a matrix [lambda_g] wrt to a basis which is the right regular representation lambda_x : y --> y*x where g in GL_1(O)",0,1,0,0,0,0,0,0,0,AlgQuatOrdResElt,,180,-38,-38,-38,-38,-38
+S,UnitGroupToGL4modN,"O is an order over R, this returns a matrix [lambda_g] wrt to a basis which is the right regular representation lambda_g : g --> b*g where g in GL_1(O)",0,2,0,0,0,0,0,0,0,148,,0,0,20,,180,-38,-38,-38,-38,-38
+S,UnitGroupToGL4modN,"O is an order over R, this returns a matrix [lambda_g] wrt to a basis which is the right regular representation lambda_g : g --> b*g where g in GL_1(O)",0,2,0,0,0,0,0,0,0,148,,0,0,AlgQuatOrdResElt,,180,-38,-38,-38,-38,-38
+S,EnhancedSemidirectInGL4,create the map from the semidirect product to GL4(R). R depends on the base ring of Ocirc,0,1,0,0,0,0,0,0,0,AlgQuatEnh,,175,-38,-38,-38,-38,-38
+S,EnhancedSemidirectInGL4,create the map from the semidirect product to GL4(R). R depends on the base ring of Ocirc,0,1,0,0,0,0,0,0,0,19,,175,-38,-38,-38,-38,-38
+S,EnhancedSemidirectInGL4modN,create the map from the semidirect product to GL4(Z/NZ),0,2,0,0,0,0,0,0,0,148,,0,0,AlgQuatEnh,,175,-38,-38,-38,-38,-38
+S,EnhancedSemidirectInGL4modN,create the map from the semidirect product to GL4(Z/NZ),0,2,0,0,0,0,0,0,0,148,,0,0,19,,175,-38,-38,-38,-38,-38
+S,EnhancedElementInGL4,"the enhanced element in GL4(R), R depends on the base ring of g",0,1,0,0,0,0,0,0,0,AlgQuatEnhElt,,180,-38,-38,-38,-38,-38
+S,EnhancedElementInGL4modN,the enhanced element in GL4,0,2,0,0,0,0,0,0,0,148,,0,0,AlgQuatEnhElt,,180,-38,-38,-38,-38,-38
+S,EnhancedImagePermutation,"AutmuO is a map from a finite group C -> B^x, which is isomorphic onto the image in B^x/Q^x. We create the semidirect product of ONx by AutmuO, using AutomorphismModN as the map theta: AutmuO -> Aut(ONx)",0,2,0,0,0,0,0,0,0,AlgQuatOrdRes,,0,0,175,,-27,-38,-38,-38,-38,-38
+S,EnhancedImagePermutation,"AutmuO is a map from a finite group C -> B^x, which is isomorphic onto the image in B^x/Q^x. We create the semidirect product of ONx by AutmuO, using AutomorphismModN as the map theta: AutmuO -> Aut(ONx)",0,3,0,0,0,0,0,0,0,148,,0,0,19,,0,0,-1,,-27,-38,-38,-38,-38,-38
+S,EnhancedElementRecord,"given <w,x> in Autmu(O) rtimes (O/N)^x or Autmu(O) rtimes O^x return <w,x> as a record along with its embedding in GL_4xGL_4 and just GL_4",0,1,0,0,0,0,0,0,0,AlgQuatEnhElt,,-1,-38,-38,-38,-38,-38
+S,GL4ToEnhanced,"Given a 4x4 matrix in the image of the inclusion Aut_mu(O) ltimes (O/N)^x, give the two components as an enhanced element",0,2,0,0,0,0,0,0,0,19,,0,0,180,,AlgQuatEnhElt,-38,-38,-38,-38,-38
+S,EnhancedImageGL4,return - the image of the enhanced semidirect product group G in GL4(Z/NZ) - the image of just (O/N)^x inside GL4(Z/NZ) - the homomorphism from the domain of AutmuO to this image,0,2,0,0,0,0,0,0,0,AlgQuatOrdRes,,0,0,175,,178,178,141,-38,-38,-38
+S,EnhancedImageGL4,return the image of the enhanced semidirect product group G in GL4(Z/NZ). The second return value is a list of enhanced elements in record format,0,3,0,0,0,0,0,0,0,148,,0,0,19,,0,0,175,,178,178,141,-38,-38,-38
+S,EnhancedImageGL4,return the image of the enhanced semidirect product group G in GL4(Z/NZ). The second return value is a list of enhanced elements in record format,0,3,0,0,0,0,0,0,0,148,,0,0,18,,0,0,19,,178,178,141,-38,-38,-38
+S,EnhancedImageGL4,return the image of the enhanced semidirect product group G in GL4(Z/NZ). The second return value is a list of enhanced elements in record format,0,3,0,0,0,0,0,0,0,148,,0,0,20,,0,0,19,,178,178,141,-38,-38,-38
+S,AutmuOinGL4modN,Embed AutmuO inside GL4(Z/NZ),0,3,0,0,0,0,0,0,0,148,,0,0,19,,0,0,175,,178,-38,-38,-38,-38,-38
+S,AutmuOinGL4modN,Embed AutmuO inside GL4(Z/NZ),0,3,0,0,0,0,0,0,0,148,,0,0,18,,0,0,19,,178,-38,-38,-38,-38,-38
+S,AutmuOinGL4modN,Embed AutmuO inside GL4(Z/NZ),0,3,0,0,0,0,0,0,0,148,,0,0,20,,0,0,19,,178,-38,-38,-38,-38,-38
+S,AllEnhancedElements,return the elements of the semidirect product Aut_mu(O) ltimes (O/N)^x as a list,0,3,0,0,0,0,0,0,0,148,,0,0,18,,0,0,19,,168,-38,-38,-38,-38,-38
+S,GL4ToEnhancedSemidirect,return the inverse of the map from Aut_mu(O) ltimes (O/N)^x to GL_4(Z/N),0,3,0,0,0,0,0,0,0,148,,0,0,18,,0,0,19,,175,-38,-38,-38,-38,-38

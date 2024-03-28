@@ -27,4 +27,5 @@ db.create_table('quaternion_orders_polarized', search_columns = search_cols, lab
 
 now copy the file from somewhere with the data which must be in the correct format for postgres to work with it and the table to accept it.
 db.quaternion_orders_polarized.copy_from('../ShimCurve/data/quaternion-orders/quaternion-orders-polarized.m', sep='?')
+db.quaternion_orders.copy_from('../ShimCurve/data/quaternion-orders/quaternion-orders.m', sep='?')
 

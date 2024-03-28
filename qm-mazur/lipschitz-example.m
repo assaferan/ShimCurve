@@ -1,11 +1,13 @@
 
 
  
-t:=101;
+t:=27;
 
 Rx<x>:=PolynomialRing(Rationals());
 f:=x^5 + 8*x^4 + t*x^3 + 16*x^2-4*x;
 C:=HyperellipticCurve(f);
+X:=C;
+prec:=30;
 
 L:=OptimizedRepresentation(HeuristicEndomorphismFieldOfDefinition(C));
 assert GroupName(GaloisGroup(L)) eq "D6";

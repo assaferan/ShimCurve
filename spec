@@ -25,6 +25,7 @@ code
       {
       mod2image.m
       mod2-enhanced-image.m
+      mod4image_generalutils.m
       }
   utils
      {

@@ -425,6 +425,8 @@ intrinsic EnhancedImageGL4(AutmuO::Map, OmodN::AlgQuatOrdRes) -> GrpMat, GrpMat,
 end intrinsic;
 
 
+
+
 intrinsic EnhancedImageGL4(AutmuO::Map, O::AlgQuatOrd, N::RngIntElt) -> GrpMat, GrpMat, HomGrp
   {return the image of the enhanced semidirect product group G in GL4(Z/NZ). The second return value
   is a list of enhanced elements in record format.}
@@ -477,5 +479,34 @@ intrinsic AutmuOinGL4modN(O::AlgQuatOrd,mu::AlgQuatOrdElt,N::RngIntElt) -> GrpMa
   return AutmuOinGL4modN(AutmuO,O,N);
 end intrinsic;
 
+
+intrinsic AllEnhancedElements(O::AlgQuatOrd, mu::AlgQuatElt, N::RngIntElt) -> List
+  {return the elements of the semidirect product Aut_mu(O) ltimes (O/N)^x as a list}
+
+  AutmuO:=Aut(O,mu);
+  OmodN:=quo(O,N);
+  G,OG,Ahom:=EnhancedImageGL4(AutmuO,OmodN);
+  Ocirc:=EnhancedSemidirectProduct(O : N:=N);
+  elts1 := [ GL4ToPair(x,O,Ahom) : x in G];
+  elts2 := [ Ocirc!<AutmuO(elt[1]),elt[2]> : elt in elts1 ];
+
+  assert forall(e){ <a,b> : a in elts2, b in elts2 | a*b in elts2 };
+
+  return elts2;
+end intrinsic;
+
+
+intrinsic GL4ToEnhancedSemidirect(O::AlgQuatOrd, mu::AlgQuatElt, N::RngIntElt) -> Map
+  {return the inverse of the map from Aut_mu(O) ltimes (O/N)^x to GL_4(Z/N)}
+  
+  AutmuO:=Aut(O,mu);
+  OmodN:=quo(O,N);
+  G,OG,Ahom:=EnhancedImageGL4(AutmuO,OmodN);
+  Ocirc:=EnhancedSemidirectProduct(O : N:=N);
+
+  map := map< G -> Ocirc | g :-> Ocirc!< AutmuO(GL4ToPair(g,O,Ahom)[1]), GL4ToPair(g,O,Ahom)[2] > >;
+  assert MapIsHomomorphism(map : injective:=true);
+  return map;
+end intrinsic;
 
 

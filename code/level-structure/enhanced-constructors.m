@@ -199,9 +199,18 @@ intrinsic '*'(g1::AlgQuatEnhElt,g2::AlgQuatEnhElt) -> AlgQuatEnhElt
 end intrinsic;
 
 
+intrinsic '^'(x::AlgQuatOrdResElt,exp::RngIntElt) -> AlgQuatOrdResElt
+  {compute x^y in (O/N)^x}
+  OmodN:=Parent(x);
+
+  x0:=x`element;
+
+  return OmodN!(x0^exp);
+end intrinsic;
+
 
 intrinsic '^'(x::AlgQuatProjElt,y::RngIntElt) -> AlgQuatProjElt 
-  {compute x*y in B^x/F^x}
+  {compute x^y in B^x/F^x}
   BxmodFx:=Parent(x);
 
   xO:=x`element;

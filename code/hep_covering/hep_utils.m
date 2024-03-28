@@ -341,16 +341,20 @@ PrintFDCovering := procedure(L, Gamma, D);
     deltas := ChangeUniverse(Gamma`ShimFDSidepairsDomain,Gamma);
     for delta in deltas do
         c,r := IsometricCircle(delta,D);
+        re_c := (AbsoluteValue(Re(c)) lt 10^-10) select 0 else RealField(6)!Re(c);
+        im_c := (AbsoluteValue(Im(c)) lt 10^-10) select 0 else RealField(6)!Im(c);
         printf "\\psclip{\\pscircle(0,0){1}} \\pscircle[fillstyle=solid,fillcolor=white](%o,%o){%o} \\endpsclip\n", 
-        RealField(6)!Re(c), RealField(6)!Im(c), Max(RealField(6)!r,0.001);
+        re_c, im_c, Max(RealField(6)!r,0.001);
     end for;
 
     printf "\n";
 
     for delta in deltas do
         c,r := IsometricCircle(delta,D);
+        re_c := (AbsoluteValue(Re(c)) lt 10^-10) select 0 else RealField(6)!Re(c);
+        im_c := (AbsoluteValue(Im(c)) lt 10^-10) select 0 else RealField(6)!Im(c);
         printf "\\psclip{\\pscircle(0,0){1}} \\pscircle(%o,%o){%o} \\endpsclip\n", 
-        RealField(6)!Re(c), RealField(6)!Im(c), Max(RealField(6)!r,0.001);
+        re_c, im_c, Max(RealField(6)!r,0.001);
     end for;
 
     for ele in L do
@@ -358,7 +362,7 @@ PrintFDCovering := procedure(L, Gamma, D);
         RealField(6)!Re(ele[1]), RealField(6)!Im(ele[1]), RealField(6)!ele[2];
     end for;
 
-    printf "\\pscircle(0,0){1}\n\\end{pspicture}\n\\end{center}\n\n\\end{document}\n";
+    printf "\\pscircle(0,0){1}\n\\end{pspicture}\n\\end{center}\n\n";
 end procedure;
 
 /*
@@ -367,16 +371,20 @@ PrintDomain := procedure(deltas, D);
 
   for delta in deltas do
     c,r := IsometricCircle(delta,D);
+    re_c := (AbsoluteValue(Re(c)) lt 10^-10) select 0 else RealField(6)!Re(c);
+    im_c := (AbsoluteValue(Im(c)) lt 10^-10) select 0 else RealField(6)!Im(c);
     printf "\\psclip{\\pscircle(0,0){1}} \\pscircle[fillstyle=solid,fillcolor=white](%o,%o){%o} \\endpsclip\n",
-      RealField(6)!Re(c), RealField(6)!Im(c), Max(RealField(6)!r,0.001);
+      re_c, im_c, Max(RealField(6)!r,0.001);
   end for;
 
   printf "\n";
 
   for delta in deltas do
     c,r := IsometricCircle(delta,D);
+    re_c := (AbsoluteValue(Re(c)) lt 10^-10) select 0 else RealField(6)!Re(c);
+    im_c := (AbsoluteValue(Im(c)) lt 10^-10) select 0 else RealField(6)!Im(c);
     printf "\\psclip{\\pscircle(0,0){1}} \\pscircle(%o,%o){%o} \\endpsclip\n",
-      RealField(6)!Re(c), RealField(6)!Im(c), Max(RealField(6)!r,0.001);
+      re_c, im_c, Max(RealField(6)!r,0.001);
   end for;
 
   printf "\\pscircle(0,0){1}\n\\end{pspicture}\n\\end{center}\n\n\\end{document}\n";
