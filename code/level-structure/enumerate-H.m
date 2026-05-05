@@ -10,10 +10,14 @@ function GroupLabel(grp)
 end function;
 
 function getDeterminantImage(H, O, Ahom)
-    N := Modulus(BaseRing(H));
+    R := BaseRing(H);
+    GL1 := GL(1, R);
     gens := [H.i : i in [1..Ngens(H)]];
+    if IsEmpty(gens) then
+	return sub<GL1 | >;
+    end if;
     ONparts := [GL4ToPair(h, O, Ahom)[2] : h in gens];
-    return sub<GL(1, Integers(N)) | [[[Norm(x)]] : x in ONparts]>;
+    return sub<GL1 | [[[Norm(x)]] : x in ONparts]>;
 end function;
 
 function getKernelOfReduction(OmodN, p, G)
@@ -35,6 +39,99 @@ function getAllReductionKernels(OmodN, G)
         ker_reds[p] := getKernelOfReduction(OmodN, p, G);
     end for;
     return ker_reds;
+end function;
+
+function EnumerateGerbiestAttachPrimeData(OmodN, G, ONx, surj_gerby_H, O1_subs)
+    if #O1_subs eq 0 then
+	Error(
+	    "EnumerateGerbiestAttachPrimeData: O1_subs is empty; use full Subgroups(G) for det-trivial subgroups, not Subgroups(G,KG) alone."
+	);
+    end if;
+
+    ker_reds := getAllReductionKernels(OmodN, G meet ONx);
+
+    ker_reds_O1 := AssociativeArray(Keys(ker_reds));
+
+    for p in Keys(ker_reds) do
+	ker_reds_O1[p] := ker_reds[p] meet O1_subs[#O1_subs]`subgroup;
+    end for;
+
+    prime_kernels_in_H := [[] : H in surj_gerby_H];
+
+    prime_kernels_in_H_O1 := [[] : H in O1_subs];
+
+    for p in Keys(ker_reds) do
+	for i->H in surj_gerby_H do
+	    if ker_reds[p] subset H`subgroup then
+		Append(~prime_kernels_in_H[i], p);
+	    end if;
+	end for;
+	for i->H in O1_subs do
+	    if ker_reds_O1[p] subset H`subgroup then
+		Append(~prime_kernels_in_H_O1[i], p);
+	    end if;
+	end for;
+    end for;
+
+    return surj_gerby_H, prime_kernels_in_H, O1_subs, prime_kernels_in_H_O1;
+end function;
+
+function EnumerateGerbiestFromSubgroupLattice(subs, OmodN, G, ONx, Ahom, KG, surjRequireKG)
+    O := OmodN`quaternionorder;
+    N := Modulus(BaseRing(G));
+    euler_phi_N := EulerPhi(N);
+
+    surj_gerby_H := [];
+    O1_subs := [];
+    for H in subs do
+	d := #getDeterminantImage(H`subgroup, O, Ahom);
+	if d eq 1 then
+	    Append(~O1_subs, H);
+	end if;
+	if d eq euler_phi_N then
+	    if surjRequireKG then
+		if KG subset H`subgroup then
+		    Append(~surj_gerby_H, H);
+		end if;
+	    else
+		Append(~surj_gerby_H, H);
+	    end if;
+	end if;
+    end for;
+
+    return EnumerateGerbiestAttachPrimeData(OmodN, G, ONx, surj_gerby_H, O1_subs);
+end function;
+
+function EnumerateGerbiestHybrid(OmodN, G, ONx, Ahom, KG)
+    assert IsNormal(G, KG);
+    O := OmodN`quaternionorder;
+    N := Modulus(BaseRing(G));
+    euler_phi_N := EulerPhi(N);
+
+    subs_full := Subgroups(G);
+    O1_subs := [];
+    for H in subs_full do
+	if #getDeterminantImage(H`subgroup, O, Ahom) eq 1 then
+	    Append(~O1_subs, H);
+	end if;
+    end for;
+
+    surj_gerby_H := [];
+    for H in Subgroups(G, KG) do
+	if #getDeterminantImage(H`subgroup, O, Ahom) eq euler_phi_N then
+	    Append(~surj_gerby_H, H);
+	end if;
+    end for;
+
+    return EnumerateGerbiestAttachPrimeData(OmodN, G, ONx, surj_gerby_H, O1_subs);
+end function;
+
+function SubgroupPrimeFingerprint(subgrp_recs, prime_rows)
+    seq := [];
+    for i in [1..#subgrp_recs] do
+	Append(~seq, <subgrp_recs[i]`order, Sort(prime_rows[i])>);
+    end for;
+    return Sort(seq);
 end function;
 
 intrinsic GetG1plus(O::AlgQuatOrd,mu::AlgQuatElt,N::RngIntElt,G::GrpMat) -> GrpMat
@@ -59,50 +156,74 @@ intrinsic EnumerateGerbiestSurjectiveH(OmodN::AlgQuatOrdRes, AutFull::Map, G::Gr
 {return all of the enhanced subgroups which contain the entire kernel (maximal size of gerbe, hence gerbisest), and having surjective reduced norm, in a list with each one being a record (rethink it).}
 
   assert IsNormal(G, KG);
-  subs:=Subgroups(G, KG);
-  O := OmodN`quaternionorder;
-  N := Modulus(BaseRing(G));
-  euler_phi_N := EulerPhi(N);
+  // surj_gerby_H from Subgroups(G,KG); O1_subs from full Subgroups(G) (det-trivial subgroups need
+  // not contain KG, e.g. the trivial subgroup). See VerifyGerbiestKGSubgroupEnumeration.
+  return EnumerateGerbiestHybrid(OmodN, G, ONx, Ahom, KG);
+end intrinsic;
 
-  surj_gerby_H := [];
-  O1_subs := [];
-  for H in subs do
-      d := #getDeterminantImage(H`subgroup, O, Ahom);
-      if d eq 1 then
-	      Append(~O1_subs, H);
-      end if;
-      if d eq euler_phi_N then
-	      Append(~surj_gerby_H, H);
-      end if;
-  end for;
+intrinsic VerifyGerbiestKGSubgroupEnumeration(O::AlgQuatOrd, mu::AlgQuatElt, N::RngIntElt) -> BoolElt, MonStgElt
+{Reference implementation uses one Subgroups(G) pass (EnumerateGerbiestFromSubgroupLattice with
+ surjRequireKG true). Production uses Subgroups(G,KG) for surj rows and full Subgroups(G) for O1.
+ Returns true when both agree: identical O1 lists (hence same O1_subs[#] / ker_reds_O1), same
+ surj multiset fingerprint (subgroup order + sorted prime rows).}
+    assert N gt 2;
+    AutFull := Aut(O,mu);
+    assert MapIsHomomorphism(AutFull : injective:=true);
+    OmodN := quo(O,N);
+    G, ONxinGL4, Ahom := EnhancedImageGL4(AutFull,O,N);
+    assert -G!1 in G;
+    G1plus := GetG1plus(O, mu, N, G);
+    KG := GetKernelAsSubgroup(O, mu, N, G1plus);
 
-  ker_reds := getAllReductionKernels(OmodN, G meet ONx);
-  
-  ker_reds_O1 := AssociativeArray(Keys(ker_reds));
-  
-  for p in Keys(ker_reds) do
-      ker_reds_O1[p] := ker_reds[p] meet O1_subs[#O1_subs]`subgroup;
-  end for;
-  
-  prime_kernels_in_H := [[] : H in surj_gerby_H];
-  
-  prime_kernels_in_H_O1 := [[] : H in O1_subs];
-  
-  // subs = Subgroups(G, KG): O1_subs lists det-trivial subgroups among those containing KG only.
-  for p in Keys(ker_reds) do
-      for i->H in surj_gerby_H do
-	  if ker_reds[p] subset H`subgroup then
-	      Append(~prime_kernels_in_H[i], p);
-	  end if;
-      end for;
-      for i->H in O1_subs do
-	  if ker_reds_O1[p] subset H`subgroup then
-	      Append(~prime_kernels_in_H_O1[i], p);
-	  end if;
-      end for;
-  end for;
+    if not IsNormal(G, KG) then
+	return false, "KG is not normal in G";
+    end if;
 
-  return surj_gerby_H, prime_kernels_in_H, O1_subs, prime_kernels_in_H_O1;
+    Oq := OmodN`quaternionorder;
+    euler_phi_N := EulerPhi(Modulus(BaseRing(G)));
+
+    subs_full := Subgroups(G);
+    ref_surj, ref_pfH, ref_O1, ref_pfO1 :=
+	EnumerateGerbiestFromSubgroupLattice(subs_full, OmodN, G, ONxinGL4, Ahom, KG, true);
+
+    hyb_surj := [];
+    for H in Subgroups(G, KG) do
+	if #getDeterminantImage(H`subgroup, Oq, Ahom) eq euler_phi_N then
+	    Append(~hyb_surj, H);
+	end if;
+    end for;
+    hyb_O1 := [];
+    for H in subs_full do
+	if #getDeterminantImage(H`subgroup, Oq, Ahom) eq 1 then
+	    Append(~hyb_O1, H);
+	end if;
+    end for;
+    hyb_surj, hyb_pfH, hyb_O1, hyb_pfO1 :=
+	EnumerateGerbiestAttachPrimeData(OmodN, G, ONxinGL4, hyb_surj, hyb_O1);
+
+    if #ref_O1 ne #hyb_O1 then
+	return false, Sprintf("O1_subs length mismatch ref=%o hybrid=%o", #ref_O1, #hyb_O1);
+    end if;
+    for i in [1..#ref_O1] do
+	if ref_O1[i]`subgroup ne hyb_O1[i]`subgroup then
+	    return false, Sprintf("O1_subs[%o] subgroup differs between reference and hybrid", i);
+	end if;
+	if Sort(ref_pfO1[i]) ne Sort(hyb_pfO1[i]) then
+	    return false, Sprintf("prime_kernels_in_H_O1 row %o differs", i);
+	end if;
+    end for;
+
+    if #ref_surj ne #hyb_surj then
+	return false, Sprintf("surj_gerby_H count mismatch ref=%o hybrid=%o", #ref_surj, #hyb_surj);
+    end if;
+
+    fp_ref := SubgroupPrimeFingerprint(ref_surj, ref_pfH);
+    fp_hyb := SubgroupPrimeFingerprint(hyb_surj, hyb_pfH);
+    if fp_ref ne fp_hyb then
+	return false, "Fingerprint mismatch on surj_gerby_H between reference and hybrid";
+    end if;
+
+    return true, "";
 end intrinsic;
 
 intrinsic EnumerateGerbiestSurjectiveH(O::AlgQuatOrd,mu::AlgQuatElt,N::RngIntElt : prime_kernel := []) -> SeqEnum[Rec]
@@ -342,6 +463,9 @@ intrinsic GenerateDataForGerbiestSurjectiveH(O::AlgQuatOrd,mu::AlgQuatElt,N::Rng
    vprintf ShimuraCurves, 1 : "#filtered %o\n", #subs;
    O1_subs := [O1_subs[i] : i in [1..#O1_subs] | O1_prime_kernels[i] eq prime_kernel];
    vprintf ShimuraCurves, 1 : "#O1 filtered %o\n", #O1_subs;
+   if #O1_subs eq 0 then
+       Error("GenerateDataForGerbiestSurjectiveH: empty O1_subs after prime_kernel filter");
+   end if;
 
    ells := EllipticElementsGL4(O, mu, N);
 
