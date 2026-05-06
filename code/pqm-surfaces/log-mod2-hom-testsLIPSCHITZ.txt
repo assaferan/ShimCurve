@@ -1,0 +1,28 @@
+Magma V2.28-8     Thu May 30 2024 17:39:44 on LEGENDRE 
+[Seed = 3705823553]
+
++-------------------------------------------------------------------+
+|       This copy of Magma has been made available through a        |
+|                   generous initiative of the                      |
+|                                                                   |
+|                         Simons Foundation                         |
+|                                                                   |
+| covering U.S. Colleges, Universities, Nonprofit Research entities,|
+|               and their students, faculty, and staff              |
++-------------------------------------------------------------------+
+
+Type ? for help.  Type <Ctrl>-D to quit.
+
+Loading startup file "/scratch/home/cs/.magmarc"
+
+
+Can't open package spec file /scratch/home/cs/CHIMP/cm-calculations/magma/spec for reading (No such file or directory); referenced from /scratch/home/cs/CHIMP/CHIMP.spec
+Can't attach specfile /scratch/home/cs/CHIMP/cm-calculations/magma/spec
+Loading file "ShimCurve/code/pqm-surfaces/mod2-hom-tests.m"
+LIPSCHITZ EXAMPLES
+The endomorphism package base point is [* (1 : 0 : 0),
+Mapping from: Rational Field to Rational Field
+*]
+The magma base point is (-4.742626907, 0.0000000000)
+The group name of the image of the endomorphism representation is D6
+The norms of elements in the image of the endomorphism representation are { -6, -2, 1, 3 }

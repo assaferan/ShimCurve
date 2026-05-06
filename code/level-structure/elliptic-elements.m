@@ -101,5 +101,3 @@ intrinsic NormalizerPlusGenerators(Enh::AlgQuatEnh) -> SeqEnum
     end if;
     return Enh`NormalizerPlusGenerators;
 end intrinsic;
-
-

@@ -156,104 +156,25 @@ intrinsic sprint(X::.) -> MonStgElt
     return remove_whitespace(Sprintf("%o",X));
 end intrinsic;
 
-intrinsic RealVector(v::ModTupFldElt) -> ModTupFldElt
-  {Given the complex vector v = v1 + I*v2 of dimension g return it as a real vector 
-   (v1  v2)^T of dimension 2g}
-
-  vector:=Eltseq(v);
-  real_part:= [ Real(a) : a in vector ];
-  imaginary_part := [ Imaginary(a) : a in vector ];
-  real_vector := real_part cat imaginary_part;
-
-  prec:=Precision(BaseRing(Parent(v)));
-  dim:=#vector;
-  RRRR:= RealField(prec);
-  return VectorSpace(RRRR,2*dim)!real_vector;
-end intrinsic;
-
-
-intrinsic RealVector(v::ModMatFldElt) -> ModMatFldElt
-  {Given the complex vector v = v1 + I*v2 of dimension g return it as a real vector 
-   (v1  v2)^T of dimension 2g}
-
-  vector:=Eltseq(v);
-  real_part:= [ Real(a) : a in vector ];
-  imaginary_part := [ Imaginary(a) : a in vector ];
-  real_vector := real_part cat imaginary_part;
-
-  prec:=Precision(BaseRing(Parent(v)));
-  dim:=#vector;
-  RRRR:= RealField(prec);
-  return Matrix(RRRR,2*dim,1,[ [a] : a in real_vector]);
-end intrinsic;
-
-
-
-intrinsic BasisOfBigPeriodMatrix(PM::ModMatFldElt) -> SeqEnum 
-  {Given a period matrix PM which is an element of M_gx2g, return the columns of PM}
-
-  columns:= [ A : A in Rows(Transpose(PM)) ];
-  matrices := [ Transpose(Matrix(BaseRing(PM),1,2, Eltseq(c))) : c in columns ];
-  return matrices;
-end intrinsic;
-
-
-
-intrinsic BasisOfBigPeriodMatrixReal(PM::ModMatFldElt) -> SeqEnum 
-  {Given a period matrix PM which is an element of M_gx2g, return the columns of PM}
-
-  columns:= [ A : A in Rows(Transpose(PM)) ];
-  matrices := [ Transpose(Matrix(BaseRing(PM),1,2, Eltseq(c))) : c in columns ];
-  matrices_real:= [ RealVector(v) : v in matrices ];
-  return matrices_real;
-end intrinsic;
-
-
-
-intrinsic BasisOfSmallPeriodMatrix(PM::AlgMatElt) -> SeqEnum 
-  {Given a period matrix PM which is an element of M_gx2g, return the columns of PM}
-
-  columns:= [ A : A in Rows(Transpose(PM)) ];
-  matrices := [ Transpose(Matrix(BaseRing(PM),1,2, Eltseq(c))) : c in columns ] cat 
-  [ Matrix(BaseRing(PM),2,1,[[1],[0]]), Matrix(BaseRing(PM),2,1,[[0],[1]]) ] ;
-  return matrices;
-end intrinsic;
-
-
-
-
-intrinsic RealLatticeOfPeriodMatrix(PM::ModMatFldElt) -> Lat 
-  {Given a period matrix PM which is an element of M_gx2g, create the real lattice 
-  whose basis is the columns of PM after a real embedding.}
-  assert NumberOfRows(Transpose(PM)) eq  2*NumberOfRows(PM);
-
-  Lambda_basisCC:=Rows(Transpose(PM));
-  real_basis:= [ RealVector(v) : v in Lambda_basisCC ];
-
-  real_basis_matrix:=Matrix(BaseRing(real_basis[1]),[ Eltseq(a) : a in real_basis]);
-  Lambda:=LatticeWithBasis(real_basis_matrix);
-
-  return Lambda;
-end intrinsic;
-
-
-
  
 
-intrinsic MapIsHomomorphism(AutmuO::. : injective:=true) -> BoolElt
-  {Check whether the map AutmuO : C -> B^x/Q^x is an injective homomorphism}
-  for x,y in Domain(AutmuO) do 
-    if not(AutmuO(x*y) eq AutmuO(x)*AutmuO(y)) then 
-      return false;
-    end if;
+intrinsic MapIsHomomorphism(f::Map : injective:=false) -> BoolElt
+  {Check whether the map f: X --> Y is a homomorphism. Set injective := true to determine if it is also injective}
+  
+  if forall(elt){ <x,y> : x in Domain(f), y in Generators(Domain(f)) | f(x*y) eq f(x)*f(y) } then 
     if injective eq true then 
-      if ((AutmuO(x) eq AutmuO(y)) and (x ne y)) then 
+      if #Set([ f(z) : z in Domain(f) ]) eq #Set(Domain(f)) then 
+        return true;
+      else 
         return false;
       end if;
+    else 
+      return true;
     end if;
-  end for;
-  return true;
-end intrinsic 
+  else 
+    return false;
+  end if;
+end intrinsic; 
 
 
 intrinsic FixedSubspace(H::GrpMat) -> GrpAb

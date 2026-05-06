@@ -55,6 +55,30 @@ MapToUnitDisc := function(z,center);
     return (z-center)/(z-ComplexConjugate(center));
 end function;
 
+intrinsic LineCircleIntersections(arg::FldReElt, C::Tup) -> FldComElt, FldComElt
+{   Computes intersection points of line through origin of argument arg with a Euclidean circle C 
+    specified by the tuple <center, radius>
+}
+    CC<i> := ComplexField();
+    pi := Pi(RealField());
+    z := C[1]; // center
+    r := C[2]; // radius
+    return r*Exp(arg*i)+z, r*Exp((arg+pi)*i)+z;
+end intrinsic;
+
+intrinsic CirclesIntersections(C1::Tup, C2::Tup) -> FldComElt, FldComElt
+{ Computes the points of intersections of two Euclidean circles C1 and C2 in the hyperbolic unit disc
+  each circle is specified by the tuple <center, radius>
+}
+    z1 := C1[1]; r1 := C1[2];
+    z2 := C2[1]; r2 := C2[2];
+    P<t> := PolynomialRing(ComplexField());
+    f := (t-z1)*r2^2 + (t-z1)*(t-z2)*(Conjugate(z2)-Conjugate(z1)) - r1^2*(t-z2);
+    f_roots := Roots(f);
+    return f_roots[1][1], f_roots[2][1];
+
+end intrinsic;
+
 pt1, pt2, pt3 := InitVertex(2,3,7); //pt3 is mapped to the origin
 D := UnitDisc(:Center:=pt3);
 zeropt := D!0;
@@ -95,22 +119,165 @@ end function;
 AddAttribute(GrpPSL2, "HeptCoverCenters");
 AddAttribute(GrpPSL2, "LayeredHeptCover");
 
-intrinsic HeptagonalCovering(Gamma::GrpPSL2, z::SpcHypElt) -> SeqEnum[RngIntElt]
-  {Takes as input a Fuchsian group Gamma, returns as output
-  the sequence of integers indexing the centers of the heptagonal cover of the Dirichlet domain of Gamma}
-    D := UnitDisc(:Center:=z);
+intrinsic HeptagonalBoundaryCovering(Gamma::GrpPSL2, center::SpcHypElt) -> List
+{ Computes a covering of the boundary of a fundamental domain of 
+the Fuchsian group Gamma by discs formed by the (2,3,7)-triangle group
+}
+    D := UnitDisc(:Center:=center);
+    zeropt := D!0;
+    fd := FundamentalDomain(Gamma,D);
+    cover_center := [**];
+    starting_center := fd[1];
+    len := #fd;
+    for i in [1..len] do
+        j := i+1;
+        if i eq len then
+            j := 1;
+        end if;
+        k := j+1;
+        if j eq len then  
+            k := 1;
+        end if;
+        z := starting_center;
+        Append(~cover_center, z);
+        //Append(~cover_center, fd[i mod #fd]);
+        //z := fd[i];
+        /*
+        z_copy := z;
+        while Distance(z_copy,zeropt) ge r_hept do
+            z1,z2 := LineCircleIntersections(Argument(z_copy), HyperbolicToEuclideanCircle(ComplexValue(z_copy),r_hept));
+            //geo_org_center, geo_org_radius := Geodesic(zeropt, z_copy);
+            //z1,z2 := circles_intersections(HyperbolicToEuclideanCircle(geo_org_center,geo_org_radius),<z_copy,r_hept>);
+            if Distance(D!z1,zeropt) lt Distance(D!z2,zeropt) then 
+                z_copy := D!z1;
+            else 
+                z_copy := D!z2;
+            end if;
+            Append(~cover_center, D!z_copy);
+        end while; 
+        */
+
+        center, radius := Geodesic(fd[i], fd[j]); 
+        //center_radius_euclid := HyperbolicToEuclideanCircle(center, radius);
+        while Distance(z, fd[j]) ge r_hept do
+            // center and radius of geodesic connecting adjacent boundary points of the fundamental domain
+            z1,z2 := CirclesIntersections(<center,radius>, HyperbolicToEuclideanCircle(ComplexValue(z), r_hept));
+            if Abs(z1) lt 1 and Abs(z2) lt 1  then
+                if Distance(D!z1, fd[j]) lt Distance(D!z2,fd[j]) then 
+                    z := D!z1;
+                else 
+                    z := D!z2;
+                end if;
+            elif Abs(z1) lt 1 then 
+                z := D!z1;
+            else
+                z := D!z2;
+            end if;
+            Append(~cover_center, D!z);
+
+            /*
+            z_copy := z;
+            while Distance(z_copy,zeropt) ge r_hept do
+                z1,z2 := LineCircleIntersections(Argument(z_copy), HyperbolicToEuclideanCircle(ComplexValue(z_copy),r_hept));
+                //geo_org_center, geo_org_radius := Geodesic(zeropt, z_copy);
+                //z1,z2 := CirclesIntersections(HyperbolicToEuclideanCircle(geo_org_center,geo_org_radius),HyperbolicToEuclideanCircle(ComplexValue(z_copy), r_hept));
+                if Distance(D!z1,zeropt) lt Distance(D!z2,zeropt) then 
+                    z_copy := D!z1;
+                else 
+                    z_copy := D!z2;
+                end if;
+                Append(~cover_center, z_copy);
+            end while; 
+            */
+        end while;
+        // intersections of the circle centered at z with the subsequent boundary of the hyperbolic plane
+        center, radius := Geodesic(fd[j], fd[k]);
+        z1,z2 := CirclesIntersections(<center,radius>, HyperbolicToEuclideanCircle(ComplexValue(z), r_hept));
+        if Abs(z1) lt 1 and Abs(z2) lt 1  then
+            if Distance(D!z1, zeropt) le Distance(D!z2, zeropt) then 
+                starting_center := D!z1;
+            else 
+                starting_center := D!z2;
+            end if;
+        elif Abs(z1) lt 1 then 
+            starting_center := D!z1;
+        else
+            starting_center := D!z2;
+        end if;
+    end for;
+    return cover_center;
+end intrinsic;
+
+intrinsic HeptagonalCoveringNew(Gamma::GrpPSL2, center::SpcHypElt) -> List
+{
+    Compute a covering of the fundamental domain of Gamma centered at center 
+}
+    D := UnitDisc(:Center:=center);
     zeropt := D!0;
     fd := FundamentalDomain(Gamma,D);
     fd_radius := Maximum({Distance(x, zeropt): x in fd});
-    N := Ceiling(fd_radius/r_hept);
-    Gamma`LayeredHeptCover := HeptTilingTable(N);
-    centers := &cat Gamma`LayeredHeptCover;
+    //N := Ceiling(fd_radius/r_hept);
+    N := Floor(fd_radius/r_hept)-1;
+    LayeredHeptCover := HeptTilingTable(N);
+    centers := &cat LayeredHeptCover;
+    centers := [ele[3] : ele in centers];
 
     O := BaseRing(Gamma);
     B := Algebra(O);
     gammagens := Gamma`ShimFDSidepairsDomain;
-    prunecenters := [centers[1]];
+    prunecenters := [*D!centers[1]*];
     indices := [1];
+    for i := 2 to #centers do
+        c := centers[i];
+        euc_circle := HyperbolicToEuclideanCircle(c,r_hept);
+        euc_radius := euc_circle[2];
+        boundary_pt := D!(c-euc_radius/AbsoluteValue(c)*c);
+        gg := HistoricShimuraReduceUnit(O!1, gammagens, Gamma, D : z0 := boundary_pt);
+        if gg[1][1] eq O!1 then
+            Append(~indices,i);
+            Append(~prunecenters,D!centers[i]);
+        end if;
+    end for;
+
+    boundary_centers := HeptagonalBoundaryCovering(Gamma, center);
+    prunecenters := prunecenters cat boundary_centers;
+    tri_group := ArithmeticTriangleGroup(2,3,7);
+    fd_tri := FundamentalDomain(tri_group, D);
+    _ := Group(tri_group);
+    covering_centers := AssociativeArray();
+    for i in [1..#prunecenters] do
+        delta := HistoricShimuraReduceUnit(BaseRing(tri_group)!1, tri_group`ShimFDSidepairsDomain, tri_group, D :z0:=D!prunecenters[i])[1][2];
+        covering_centers[delta] := i;
+    end for;
+
+    Gamma`HeptCoverCenters := covering_centers;
+
+    return prunecenters;
+end intrinsic;
+
+
+
+intrinsic HeptagonalCovering(Gamma::GrpPSL2, center::SpcHypElt) -> SeqEnum[RngIntElt]
+  {Takes as input a Fuchsian group Gamma, returns as output
+  the sequence of integers indexing the centers of the heptagonal cover of the Dirichlet domain of Gamma}
+    D := UnitDisc(:Center:=center);
+    zeropt := D!0;
+    fd := FundamentalDomain(Gamma,D);
+    fd_radius := Maximum({Distance(x, zeropt): x in fd});
+    N := Ceiling(fd_radius/r_hept);
+    //N := Floor(fd_radius/r_hept)-1;
+    Gamma`LayeredHeptCover := HeptTilingTable(N);
+    centers := &cat Gamma`LayeredHeptCover;
+    euc_circles := [HyperbolicToEuclideanCircle(centers[i][3], r_hept) : i in [1..#centers]]; 
+    to_include := [false : i in [1..#centers]];
+
+    O := BaseRing(Gamma);
+    B := Algebra(O);
+    gammagens := Gamma`ShimFDSidepairsDomain;
+    //prunecenters := [centers[1]];
+    //indices := [1];
+    
+    /*
     for i := 2 to #centers do
         c := centers[i][3];
         euc_circle := HyperbolicToEuclideanCircle(c,r_hept);
@@ -122,8 +289,53 @@ intrinsic HeptagonalCovering(Gamma::GrpPSL2, z::SpcHypElt) -> SeqEnum[RngIntElt]
             Append(~prunecenters,centers[i]);
         end if;
     end for;
+    */ 
+    prunecenters := [];
+    indices := [];
+    for i in [1..#centers] do 
+        if not to_include[i] then 
+            for j := 1 to #centers do 
+                if i ne j then 
+                    if Distance(D!centers[i][3], D!centers[j][3]) le 2 * r_hept then 
+                        int1, int2 := CirclesIntersections(euc_circles[i], euc_circles[j]);
+                        is_interior := exists{x : x in [int1, int2] | HistoricShimuraReduceUnit(O!1, gammagens, Gamma, D : z0 := x)[1][1] eq O!1};
+                        if is_interior then 
+                            to_include[i] := true; to_include[j] := true;
+                            Append(~indices, i); Append(~indices, j);
+                            Append(~prunecenters, centers[i]); Append(~prunecenters, centers[j]); 
+                            break;
+                        end if;
+                    end if;
+                end if;
+            end for;
+        end if;
+    end for;
+
     Gamma`HeptCoverCenters := prunecenters;
     return indices;
+end intrinsic;
+
+intrinsic LocateCenterNew(Gamma::GrpPSL2, center::SpcHypElt, point::SpcHydElt) -> RngIntElt
+{
+    Locate which disc point belongs to in the covering of Gamma specified by Gamma`HeptCoverCenters
+}
+    D := UnitDisc(:Center:=center);
+    fd := FundamentalDomain(Gamma,D);
+    tri_group := ArithmeticTriangleGroup(2,3,7);
+    fd_tri := FundamentalDomain(tri_group, D);
+    _ := Group(tri_group);
+
+    for i in [1..7] do
+        try 
+            delta := HistoricShimuraReduceUnit(BaseRing(tri_group)!1, tri_group`ShimFDSidepairsDomain, tri_group, D :z0:=D!MobiusTransformation(C^i,point))[1][2];
+                if IsDefined(Gamma`HeptCoverCenters, delta) then
+                    return Gamma`HeptCoverCenters[delta];
+                end if;
+        catch e
+            continue;
+        end try;
+    end for;
+    return 1;
 end intrinsic;
 
 
@@ -234,7 +446,7 @@ intrinsic HyperbolicToEuclideanCircle(w::FldComElt,r::FldReElt) -> Tup
 end intrinsic;
 
 intrinsic HyperbolicToEuclideanCircle(ws::SeqEnum,r::FldReElt) -> SeqEnum
-    {returns the Euclidean center and Euclidean radius of the circles in 
+    {returns the Euclidean centers and Euclidean radii of the circles in 
     hyperbolic unit disc with hyperbolic center given by ws and fixed hyperbolic radius r.
     Uses Eq 33.7.5 from John Voight - Quaternion Algebras}
     return [HyperbolicToEuclideanCircle(w,r) : w in ws];
@@ -334,32 +546,7 @@ wrt the area of fundamental domain, and -d.}
     return a/A, -d;
 end intrinsic;
 
-PrintFDCovering := procedure(L, Gamma, D);
-// L: List of tuples <center, radius>
-    printf "\\begin{center}\n\\psset{unit=2.5in}\n\\begin{pspicture}(-1,-1)(1,1)\n\\pscircle[fillstyle=solid,fillcolor=lightgray](0,0){1}\n\n";
 
-    deltas := ChangeUniverse(Gamma`ShimFDSidepairsDomain,Gamma);
-    for delta in deltas do
-        c,r := IsometricCircle(delta,D);
-        printf "\\psclip{\\pscircle(0,0){1}} \\pscircle[fillstyle=solid,fillcolor=white](%o,%o){%o} \\endpsclip\n", 
-        RealField(6)!Re(c), RealField(6)!Im(c), Max(RealField(6)!r,0.001);
-    end for;
-
-    printf "\n";
-
-    for delta in deltas do
-        c,r := IsometricCircle(delta,D);
-        printf "\\psclip{\\pscircle(0,0){1}} \\pscircle(%o,%o){%o} \\endpsclip\n", 
-        RealField(6)!Re(c), RealField(6)!Im(c), Max(RealField(6)!r,0.001);
-    end for;
-
-    for ele in L do
-        printf "\\pscircle[](%o,%o){%o}\n", 
-        RealField(6)!Re(ele[1]), RealField(6)!Im(ele[1]), RealField(6)!ele[2];
-    end for;
-
-    printf "\\pscircle(0,0){1}\n\\end{pspicture}\n\\end{center}\n\n\\end{document}\n";
-end procedure;
 
 /*
 PrintDomain := procedure(deltas, D);
@@ -367,18 +554,24 @@ PrintDomain := procedure(deltas, D);
 
   for delta in deltas do
     c,r := IsometricCircle(delta,D);
+    re_c := (AbsoluteValue(Re(c)) lt 10^-10) select 0 else RealField(6)!Re(c);
+    im_c := (AbsoluteValue(Im(c)) lt 10^-10) select 0 else RealField(6)!Im(c);
     printf "\\psclip{\\pscircle(0,0){1}} \\pscircle[fillstyle=solid,fillcolor=white](%o,%o){%o} \\endpsclip\n",
-      RealField(6)!Re(c), RealField(6)!Im(c), Max(RealField(6)!r,0.001);
+      re_c, im_c, Max(RealField(6)!r,0.001);
   end for;
 
   printf "\n";
 
   for delta in deltas do
     c,r := IsometricCircle(delta,D);
+    re_c := (AbsoluteValue(Re(c)) lt 10^-10) select 0 else RealField(6)!Re(c);
+    im_c := (AbsoluteValue(Im(c)) lt 10^-10) select 0 else RealField(6)!Im(c);
     printf "\\psclip{\\pscircle(0,0){1}} \\pscircle(%o,%o){%o} \\endpsclip\n",
-      RealField(6)!Re(c), RealField(6)!Im(c), Max(RealField(6)!r,0.001);
+      re_c, im_c, Max(RealField(6)!r,0.001);
   end for;
 
   printf "\\pscircle(0,0){1}\n\\end{pspicture}\n\\end{center}\n\n\\end{document}\n";
 end procedure;
 */
+
+

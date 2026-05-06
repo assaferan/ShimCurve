@@ -561,7 +561,6 @@ intrinsic WriteSubgroupsDataToFile(file::IO, subs::SeqEnum[Rec], O::AlgQuatOrd)
       else
           qbar_gon := "\\N";
       end if;
-      
 
       s_fields_assoc := AssociativeArray();
       s_fields_assoc["Glabel"] := s`Glabel;

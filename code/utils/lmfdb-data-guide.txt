@@ -1,0 +1,79 @@
+Now we start sage and import that database 
+sage 
+from lmfdb import db
+
+db.[tab complete] #will show all the subdatabases in the LMFDB
+
+let’s do l-functions:
+lf = db.lfunc_functions
+sage: lf
+Interface to Postgres table lfunc_lfunctions
+lf.[tab complete] #shows all the options to query the lf database, I count ~80 functions
+
+sage: db.lfunc_lfunctions.lucky() #gives us a random l-function
+sage: db.lfunc_lfunctions.col_type #is the columns that format the data of the l-functions, i.e. each l-function has one of these attributes, it also returns the type
+sage: db.lfunc_lfunctions.column_description() #this is the same but returns the description
+sage: lfunc_example = db.lfunc_lfunctions.lucky()
+sage: lfunc_example.keys() #also the name of the columns, from an example
+
+sage: lfunc_example_zeroes =  lfunc_example['positive_zeros']
+
+
+Now suppose we want to search for something in the database:
+sage: from lmfdb import db
+sage: nf = db.nf_fields
+sage: info = {}
+sage: nf.search({'degree':int(6)}, projection=['label','class_number','galt'], limit=4, info=info)
+[{'class_number': 1, 'galt': 5, 'label': u'6.0.9747.1'},
+ {'class_number': 1, 'galt': 11, 'label': u'6.0.10051.1'},
+ {'class_number': 1, 'galt': 11, 'label': u'6.0.10571.1'},
+ {'class_number': 1, 'galt': 5, 'label': u'6.0.10816.1'}]
+sage: info['number'], info['exact_count']
+(5522600, True)
+
+
+
+Adding Data
+
+
+First we create a table with the right columns and types.
+Then we add data in the right format to the table.
+
+To show the options to create a table do
+db.create_table?
+
+Let’s give the example of making a database of quaternion orders:
+
+this makes the columns and the type in postgres
+search_cols = {'text' : ['label'], 'integer': ['i_square','j_square','discO','discB'], 'integer[]': ['gens_numerators',  'gens_denominators']}
+
+these are the descriptions of the columns
+col_desc = {'label': 'the label of the quaternion order, of the format discB.discO or just discB if O is maximal',
+ 'i_square': '$i^2$',
+ 'j_square': '$j^2$',
+ 'discO': 'discriminant of O',
+ 'discB': 'discriminant of B',
+ 'gens_numerators': 'the numerators of the basis of O in terms of generators of B',
+ 'gens_denominators': 'the LCMs of the denominators of the basis elements'}
+
+now we can create the table
+db.create_table('quaternion_orders', search_columns = search_cols, label_col = 'label', table_description = 'a table of quaternion orders', col_description = col_desc)
+
+now copy the file from somewhere with the data which must be in the correct format for postgres to work with it and the table to accept it.
+db.quaternion_orders.copy_from('../ShimCurve/data/quaternion-orders/quaternion-orders.m', sep='?')
+
+
+
+##################################################
+#Let's search for a group in the shimura curve database and find the associated permutation triple.
+
+#load the shimura groups data 
+gps_shim = db.gps_shimura_test
+
+#this shows all the columns and their types 
+gps_shim.col_type
+#this shows columns and description
+gps_shim.column_description()
+
+#this searches for the various filters and projects the information
+gps_shim.search({'discB':int(6),'level':int(4),'deg_mu':int(2),'torsion':[2]},projection=['label','deg_mu','torsion','ram_data_elts'],limit=20)

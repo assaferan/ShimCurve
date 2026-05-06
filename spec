@@ -25,11 +25,14 @@ code
       {
       mod2image.m
       mod2-enhanced-image.m
+      mod4image_generalutils.m
+      periods.m
       }
   utils
      {
       utils.m
       read-write.m
+      fieldaut.m
       }
   quaternion_orders
       {

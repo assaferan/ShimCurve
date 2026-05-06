@@ -1,4 +1,11 @@
 
+function Primitive(x)
+    c := Eltseq(x);
+    d := LCM([Denominator(r) : r in c]);
+    n := [Integers()!(d * r) : r in c];
+    return x * (d / GCD(n));
+end function;
+
 intrinsic Aut(O::AlgQuatOrd,mu::AlgQuatElt) -> Map
   {return Autmu(O), as a map from D_n or C_n to BxmodQx (which is not a group in Magma)}
 
@@ -44,7 +51,7 @@ intrinsic Aut(O::AlgQuatOrd,mu::AlgQuatElt) -> Map
     //assert #Dngens eq 2;
     assert Order(Dn.2) eq #Dn/2;
     assert Order(Dn.1) eq 2;
-    elts:= [ <Dn.1^k*Dn.2^l, BxmodQx!(b^k*a^l)> : l in [0..cyc_order-1], k in [0..1] ];
+    elts:= [ <Dn.1^k*Dn.2^l, BxmodQx!(Primitive(b^k*a^l))> : l in [0..cyc_order-1], k in [0..1] ];
     grp_map:=map< Dn -> BxmodQx | elts >;
   else
     if cyclo then
@@ -52,7 +59,7 @@ intrinsic Aut(O::AlgQuatOrd,mu::AlgQuatElt) -> Map
     else
       Cn<w_mu>:=CyclicGroup(GrpPC, 2);
     end if;
-    elts:= [ <Cn.1^k,BxmodQx!(a^k)> : k in [0..#Cn-1] ];
+    elts:= [ <Cn.1^k,BxmodQx!(Primitive(a^k))> : k in [0..#Cn-1] ];
     grp_map:=map< Cn -> BxmodQx | elts >;
   end if;
 

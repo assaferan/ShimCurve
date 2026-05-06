@@ -1,0 +1,103 @@
+Magma V2.28-8     Thu May 30 2024 17:37:58 on LEGENDRE 
+[Seed = 2778405810]
+
++-------------------------------------------------------------------+
+|       This copy of Magma has been made available through a        |
+|                   generous initiative of the                      |
+|                                                                   |
+|                         Simons Foundation                         |
+|                                                                   |
+| covering U.S. Colleges, Universities, Nonprofit Research entities,|
+|               and their students, faculty, and staff              |
++-------------------------------------------------------------------+
+
+Type ? for help.  Type <Ctrl>-D to quit.
+
+Loading startup file "/scratch/home/cs/.magmarc"
+
+
+Can't open package spec file /scratch/home/cs/CHIMP/cm-calculations/magma/spec for reading (No such file or directory); referenced from /scratch/home/cs/CHIMP/CHIMP.spec
+Can't attach specfile /scratch/home/cs/CHIMP/cm-calculations/magma/spec
+Loading file "ShimCurve/code/pqm-surfaces/mod2-hom-tests.m"
+PQM10 EXAMPLES
+The endomorphism package base point is [* (1 : 0 : 0),
+Mapping from: Rational Field to Rational Field
+*]
+The magma base point is (-1.902113033*I, 0.0000000000)
+Hyperelliptic Curve defined by y^2 = -x^5 - 5*x^3 - 5*x over Rational Field
+
+EndomorphismRepresentationPQM(
+X: X
+)
+In file "/scratch/home/cs/ShimCurve/code/pqm-surfaces/mod2-enhanced-image.m", line 192, column 5:
+>>     assert IsQuaternionAlgebra(B2);
+       ^
+Runtime error in assert: Assertion failed
+==============================
+The endomorphism package base point is [* (1 : -1 : 0),
+Mapping from: Rational Field to Rational Field
+*]
+The magma base point is (-1.165352128, 0.0000000000)
+The group name of the image of the endomorphism representation is C2^2
+The norms of elements in the image of the endomorphism representation are { -5, -2, 1, 10 }
+L is not a subfield of QA2
+true
+Hyperelliptic Curve defined by y^2 = x^6 - 5*x^5 + 15*x^3 - 9*x over Rational Field
+[
+<-5/2*j + k, [1 1 1 1]>,
+<1/2*j - k, [1 1 1 1]>
+]
+[
+[1 1 1 1]
+[0 1 1 0]
+[0 0 1 1]
+[0 0 0 1],
+
+[1 1 1 1]
+[0 1 1 0]
+[0 0 1 1]
+[0 0 0 1]
+]
+[ 1, -1/2 + i, 1/2*j - k, -j ]
+10
+The group name of the image in GL(4,2) is C4
+==============================
+The endomorphism package base point is [* (1 : 2*$.1 : 0),
+Mapping from: Rational Field to Number Field with defining polynomial t^2 - 2 over the Rational Field
+Composition of Mapping from: Rational Field to Number Field with defining polynomial t^2 - 32 over the Rational Field and
+Mapping from: Number Field with defining polynomial t^2 - 32 over the Rational Field to Number Field with defining polynomial t^2 - 2 over the Rational Field
+*]
+The magma base point is (-0.7790223460, 0.0000000000)
+true
+The group name of the image of the endomorphism representation is C2
+The norms of elements in the image of the endomorphism representation are { -5, 1 }
+L is not a subfield of QA2
+true
+true
+Hyperelliptic Curve defined by y^2 = 8*x^6 - 42*x^5 + 36*x^4 + 67*x^3 - 42*x^2 - 54*x - 12 over Rational Field
+[
+<-8*k, [0 1 0 1]>,
+<-8*k, [0 1 0 0]>
+]
+[
+[0 1 0 1]
+[1 1 1 1]
+[0 0 1 1]
+[0 0 1 0],
+
+[0 1 0 0]
+[1 1 0 0]
+[0 0 1 1]
+[0 0 1 0]
+]
+[ 1, 1/2 - 2*k, 2*i, -i - 2*j ]
+10
+The group name of the image in GL(4,2) is A4
+==============================
+The endomorphism package base point is [* (1 : -5 : 2),
+Mapping from: Rational Field to Rational Field
+*]
+The magma base point is (-7.329085454, 0.0000000000)
+The group name of the image of the endomorphism representation is C2^2
+The norms of elements in the image of the endomorphism representation are { -5, -2, 1, 10 }
+L is not a subfield of QA2
