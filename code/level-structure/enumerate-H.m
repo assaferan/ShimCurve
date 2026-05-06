@@ -381,7 +381,7 @@ procedure updateLabels(~subs, G)
     end for;
 end procedure;
 
-intrinsic GenerateDataForGerbiestSurjectiveH(O::AlgQuatOrd,mu::AlgQuatElt,Ns::SeqEnum[RngIntElt],~LatLookup::Assoc) -> SeqEnum[Rec], Assoc
+intrinsic GenerateDataForGerbiestSurjectiveH(O::AlgQuatOrd,mu::AlgQuatElt,Ns::SeqEnum[RngIntElt],LatLookup::Assoc) -> SeqEnum[Rec], Assoc
 {Returns a list of records, each representing a line to be added to the database gps_shimura_test, together with an updated LatLookup.
 If N in Ns, then the every integer m dividing N should be in Ns}
 
@@ -544,7 +544,7 @@ intrinsic WriteSubgroupsDataToFile(file::IO, subs::SeqEnum[Rec], O::AlgQuatOrd)
       if s`genus eq 0 then
           q_gon_bounds := [1, 2];
           qbar_gon_bounds := [1, 1];
-      if s`genus eq 1 then
+      elif s`genus eq 1 then
           q_gon_bounds := [2, 2*s`index];
           qbar_gon_bounds := [2, 2];
       else

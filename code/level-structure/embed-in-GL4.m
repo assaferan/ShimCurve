@@ -260,7 +260,18 @@ intrinsic EnhancedSemidirectInGL4(Enh::AlgQuatEnh) -> Map
   return mapfromenhancedimage;
 end intrinsic;
 
+intrinsic EnhancedSemidirectInGL4modN(Ocirc::AlgQuatEnh,N::RngIntElt) -> Map 
+  {create the map from the semidirect product to GL4(Z/NZ)}
 
+  O:=Ocirc`quaternionorder;
+
+  ZmodN:=ResidueClassRing(N);
+  GL4:=GL(4,ZmodN);
+  mapfromenhancedimage := map<  Ocirc -> GL4  |  
+    s :-> GL4!(NormalizingElementToGL4((s`element)[1],O)*UnitGroupToGL4((s`element)[2]))  >;
+  
+  return mapfromenhancedimage;
+end intrinsic;
 
 intrinsic EnhancedElementInGL4(g::AlgQuatEnhElt) -> GrpMatElt
   {the enhanced element in GL4(R), R depends on the base ring of g}
@@ -270,6 +281,13 @@ intrinsic EnhancedElementInGL4(g::AlgQuatEnhElt) -> GrpMatElt
   return map(g);
 end intrinsic;
 
+intrinsic EnhancedElementInGL4modN(g::AlgQuatEnhElt,N::RngIntElt) -> GrpMatElt
+  {the enhanced element in GL4}
+
+  Ocirc:=Parent(g);
+  map:=EnhancedSemidirectInGL4modN(Ocirc,N);
+  return map(g);
+end intrinsic;
 
 intrinsic EnhancedImagePermutation(AutmuO::Map,OmodN::AlgQuatOrdRes) -> Grp
   {AutmuO is a map from a finite group C -> B^x, which is isomorphic onto the image in B^x/Q^x.

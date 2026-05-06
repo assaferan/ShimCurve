@@ -1,3 +1,4 @@
+import "enumerate-H.m" : getDeterminantImage;
 
 declare type AlgQuatOrdRes[AlgQuatOrdResElt];
 
@@ -742,7 +743,7 @@ end intrinsic;
 
 intrinsic ComputeSubs(X::AlgQuatEnhSys, N::RngIntElt) -> SeqEnum
 {Compute subgroups at level n for all divisors n of N}
-    Enh := EnhancedSemidirectProduct(X, M);
+    Enh := EnhancedSemidirectProduct(X, N);
     G := GL4sub(Enh);
 
     // TODO: map to a permutation group instead of computing in G
@@ -777,8 +778,8 @@ intrinsic ComputeLats(X::AlgQuatEnhSys, M::RngIntElt)
     vprint User1: "DeterminantImages", Cputime() - t0; t0 := Cputime();
 
     phiN := EulerPhi(N);
-    surjH := [H[i] : i in [1..#subs] | detimages[i] eq phiN];
-    trivH := [H[i] : i in [1..#subs] | detimages[i] eq 1];
+    surjH := [subs[i] : i in [1..#subs] | detimages[i] eq phiN];
+    trivH := [subs[i] : i in [1..#subs] | detimages[i] eq 1];
 
     t0 := Cputime();
     surj_gerby_H := [H : H in surjH | KG subset H`subgroup];
@@ -809,17 +810,18 @@ intrinsic ComputeLats(X::AlgQuatEnhSys, M::RngIntElt)
         L`inclusions_known := true; // We want to compute inclusion relations
         L`index_bound := 0; // Even though we are restricting subgroups, it's not correctly modeled by an index bound
         if m eq N then
-            L`subs := [SubgroupLatElement(L, surj_getby_H[i]`subgroup : i:=i, subgroup_count:=surj_gerby_H[i]`length) : i in [1..#surj_gerby_H]];
+            L`subs := [SubgroupLatElement(L, surj_gerby_H[i]`subgroup : i:=i, subgroup_count:=surj_gerby_H[i]`length) : i in [1..#surj_gerby_H]];
         else
             p := Representative({p : p in primes | IsDivisibleBy(N, m*p)});
             reduction_map := Transfer(X, m*p, p);
             // We construct subgroups at level m from subgroups at level m*p
-        mpsubs := [
-        L`subs := [X`Lat[m*p]`subs[i] @ reduction_map : 
-        msubs[m] := [i : i in [1..#surjLevel] | IsDivisibleBy(m, surjLevel[i])];
-        m1subs[m] := [i : i in [1..#trivLevel] | IsDivisibleBy(m, trivLevel[i])];
+            // mpsubs := [
+            //L`subs := [X`Lat[m*p]`subs[i] @ reduction_map : 
+            msubs[m] := [i : i in [1..#surjLevel] | IsDivisibleBy(m, surjLevel[i])];
+            m1subs[m] := [i : i in [1..#trivLevel] | IsDivisibleBy(m, trivLevel[i])];
+        end if;
     end for;
-    for m in divN do
+    //for m in divN do
         
 
 end intrinsic;
@@ -863,7 +865,7 @@ intrinsic getGLReductionKernels(X::AlgQuatEnhSys, N::RngIntElt) -> Assoc
 {Return the prime-power kernels of reduction from level N to N/q}
     ker_reds := AssociativeArray();
     for p in PrimeDivisors(N) do
-        ker_red[p] := [Kernel(Transfer(X, N, p^k)) : k in [1..Valuation(N, p)]];
+        ker_reds[p] := [Kernel(Transfer(X, N, p^k)) : k in [1..Valuation(N, p)]];
     end for;
     return ker_reds;
 end intrinsic;
