@@ -1,9 +1,9 @@
 
 function Primitive(x)
-    c := Eltseq(x);
-    d := LCM([Denominator(r) : r in c]);
-    n := [Integers()!(d * r) : r in c];
-    return x * (d / GCD(n));
+  c := Eltseq(x);
+  d := LCM([Denominator(r) : r in c]);
+  n := [Integers()!(d * r) : r in c];
+  return x * (d / GCD(n));
 end function;
 
 intrinsic Aut(O::AlgQuatOrd,mu::AlgQuatElt) -> Map

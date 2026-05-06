@@ -1,13 +1,13 @@
 // Copy pasted from the finite group Repository
 
 intrinsic EncodePerm(x::GrpPermElt) -> RngIntElt
-    {return rank of permutation x}
-    return LehmerCodeToRank(LehmerCode(x));
+  {return rank of permutation x}
+  return LehmerCodeToRank(LehmerCode(x));
 end intrinsic;
 
 intrinsic DecodePerm(x::RngIntElt, n::RngIntElt) -> GrpPermElt
-    {Given rank x, return corresponding permutation in Sym(n)}
-    return LehmerCodeToPermutation(RankToLehmerCode(x,n));
+  {Given rank x, return corresponding permutation in Sym(n)}
+  return LehmerCodeToPermutation(RankToLehmerCode(x,n));
 end intrinsic;
 
 intrinsic LehmerCodeToRank(lehmer::SeqEnum) -> RngIntElt

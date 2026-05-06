@@ -20,8 +20,8 @@ end intrinsic;
 
 intrinsic AutomorphismsModN(S::{ AlgQuatProjElt }, OmodN::AlgQuatOrdRes) -> Map
   {Given a subset of Aut(O) input as a finite subset S of B^x, create the map
-   theta : S -> Aut((O/N)^x)}
-  
+  theta : S -> Aut((O/N)^x)}
+
   ONx,phi:=UnitGroup(OmodN);
   return map< S -> AutomorphismGroup(ONx) | s:->ElementToAutomorphismModN(s,OmodN) >;
 end intrinsic;
@@ -29,7 +29,7 @@ end intrinsic;
 intrinsic AutomorphismsModN(S::{ AlgQuatProjElt }, O::AlgQuatOrd, N::RngIntElt) -> Map
   {Given a subset of Aut(O) input as a finite subset S of B^x, create the map
   theta : S -> Aut((O/N)^x)}
-  
+
   OmodN:=quo(O,N);
   return AutomorphismsModN(S,OmodN);
 end intrinsic;
@@ -83,7 +83,7 @@ intrinsic NormalizingElementToGL4modN(w::AlgQuatProjElt,O::AlgQuatOrd, N::RngInt
 end intrinsic;
 
 intrinsic Random(ON::AlgQuatOrdRes) -> AlgQuatOrdResElt
-{Random element of O/N}
+  {Random element of O/N}
   O := ON`quaternionorder;
   N := ON`quaternionideal;
   B := Basis(O);
@@ -91,7 +91,7 @@ intrinsic Random(ON::AlgQuatOrdRes) -> AlgQuatOrdResElt
 end intrinsic;
 
 intrinsic UnitGroupOrder(ON::AlgQuatOrdRes) -> RngIntElt
-{The cardinality of (O/N)^x}
+  {The cardinality of (O/N)^x}
   O := ON`quaternionorder;
   N := ON`quaternionideal;
   ans := 1;
@@ -116,7 +116,7 @@ intrinsic UnitGroupOrder(ON::AlgQuatOrdRes) -> RngIntElt
 end intrinsic;
 
 intrinsic UnitGroupGens(ON::AlgQuatOrdRes) -> SeqEnum, SeqEnum
-{Generators for (O/N)^x}
+  {Generators for (O/N)^x}
   // For now, we always use a randomized approach
   N := ON`quaternionideal;
   ZmodN := ResidueClassRing(N);
@@ -267,8 +267,8 @@ intrinsic EnhancedSemidirectInGL4modN(Ocirc::AlgQuatEnh,N::RngIntElt) -> Map
   ZmodN:=ResidueClassRing(N);
   GL4:=GL(4,ZmodN);
   mapfromenhancedimage := map<  Ocirc -> GL4  |  
-    s :-> GL4!(NormalizingElementToGL4((s`element)[1],O)*UnitGroupToGL4((s`element)[2]))  >;
-  
+  s :-> GL4!(NormalizingElementToGL4((s`element)[1],O)*UnitGroupToGL4((s`element)[2]))  >;
+
   return mapfromenhancedimage;
 end intrinsic;
 
@@ -335,7 +335,7 @@ end intrinsic;
 intrinsic EnhancedElementRecord(elt::AlgQuatEnhElt) -> Any
   {given <w,x> in Autmu(O) \rtimes (O/N)^x or Autmu(O) \rtimes O^x  return <w,x> as a 
   record along with its embedding in GL_4xGL_4 and just GL_4}
-  
+
   Ocirc:=Parent(elt);
   O:=Ocirc`quaternionorder;
   R:=Ocirc`basering;
@@ -364,17 +364,17 @@ intrinsic EnhancedElementRecord(elt::AlgQuatEnhElt) -> Any
 end intrinsic;
 
 intrinsic GL4ToEnhanced(g::GrpMatElt, O::AlgQuatOrd) -> AlgQuatEnhElt
-{Given a 4x4 matrix in the image of the inclusion Aut_mu(O) ltimes (O/N)^x, give the two components as an enhanced element}
-    R := BaseRing(Parent(g));
-    N := #R;
-    M4R := MatrixAlgebra(R,4);
+  {Given a 4x4 matrix in the image of the inclusion Aut_mu(O) ltimes (O/N)^x, give the two components as an enhanced element}
+  R := BaseRing(Parent(g));
+  N := #R;
+  M4R := MatrixAlgebra(R,4);
 end intrinsic;
 
 intrinsic EnhancedImageGL4(AutmuO::Map, OmodN::AlgQuatOrdRes) -> GrpMat, GrpMat, HomGrp
   {return
-   - the image of the enhanced semidirect product group G in GL4(Z/NZ)
-   - the image of just (O/N)^x inside GL4(Z/NZ)
-   - the homomorphism from the domain of AutmuO to this image.}
+  - the image of the enhanced semidirect product group G in GL4(Z/NZ)
+  - the image of just (O/N)^x inside GL4(Z/NZ)
+  - the homomorphism from the domain of AutmuO to this image.}
 
   O:=OmodN`quaternionorder;
   N:=OmodN`quaternionideal;
@@ -407,11 +407,11 @@ intrinsic EnhancedImageGL4(AutmuO::Map, OmodN::AlgQuatOrdRes) -> GrpMat, GrpMat,
 
   enhancedimage:=[];
   for elt in enhanced_gens do
-    s := rec< RF | >;
-    s`enhanced:=elt;
-    s`GL4xGL4:=<NormalizingElementToGL4modN(elt`element[1],O,N), UnitGroupToGL4modN((elt`element[2])`element,N)>;
-    s`GL4:=s`GL4xGL4[1]*s`GL4xGL4[2];
-    Append(~enhancedimage,s);
+  s := rec< RF | >;
+  s`enhanced:=elt;
+  s`GL4xGL4:=<NormalizingElementToGL4modN(elt`element[1],O,N), UnitGroupToGL4modN((elt`element[2])`element,N)>;
+  s`GL4:=s`GL4xGL4[1]*s`GL4xGL4[2];
+  Append(~enhancedimage,s);
   end for;
 
 
@@ -498,7 +498,7 @@ end intrinsic;
 
 intrinsic GL4ToEnhancedSemidirect(O::AlgQuatOrd, mu::AlgQuatElt, N::RngIntElt) -> Map
   {return the inverse of the map from Aut_mu(O) ltimes (O/N)^x to GL_4(Z/N)}
-  
+
   AutmuO:=Aut(O,mu);
   OmodN:=quo(O,N);
   G,OG,Ahom:=EnhancedImageGL4(AutmuO,OmodN);

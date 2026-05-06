@@ -1,5 +1,5 @@
 
-  
+
 
 intrinsic HasPolarizedElementOfDegree(O::AlgQuatOrd,d::RngIntElt) -> BoolElt, AlgQuatElt 
   {return an element mu of O such that mu^2 + d*disc(O) = 0 if it exists.}
@@ -64,8 +64,8 @@ end intrinsic;
 
 intrinsic IsTwisting(O::AlgQuatOrd,mu::AlgQuatElt) -> BoolElt
   {(O,mu) is twisting (of degree del = -mu^2/disc(O)) if there exists chi in O and N_Bx(O)
-   such that chi^2 = m, m|Disc(O) and mu*chi = -chi*mu. Return true or false; if true 
-   return [mu, chi] up to scaling}
+  such that chi^2 = m, m|Disc(O) and mu*chi = -chi*mu. Return true or false; if true 
+  return [mu, chi] up to scaling}
 
   //assert IsMaximal(O);
   Rx<x>:=PolynomialRing(Rationals());
@@ -101,7 +101,7 @@ intrinsic IsTwisting(O::AlgQuatOrd,mu::AlgQuatElt) -> BoolElt
   Q:=QuadraticForms(Dform);
   q := Q![a,b,c];
   L:=Lattice(q);
-  
+
   //We loop over short vectors of size <= disc to see if any divide disc
   solns:=ShortVectors(L,disc);
   if #solns eq 0 then 
@@ -109,8 +109,8 @@ intrinsic IsTwisting(O::AlgQuatOrd,mu::AlgQuatElt) -> BoolElt
   end if;
 
 
-//Note that there might be many candidates for chi.
-//Does this mean that there are multiple possibilities for Aut_mu(O) or they generate the same group!?!?
+  //Note that there might be many candidates for chi.
+  //Does this mean that there are multiple possibilities for Aut_mu(O) or they generate the same group!?!?
   for soln in solns do 
     if IsDivisibleBy(disc,soln[2]) then
       x,y:=Explode(Eltseq(soln[1]));

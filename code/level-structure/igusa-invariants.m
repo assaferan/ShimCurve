@@ -57,7 +57,7 @@ intrinsic PQMIgusaClebschDisc10(j::FldRatElt) -> SeqEnum
   J10:=j^4;
   BGIgusa:=[J2,J4,J6,J8,J10];
 
-   //The Igusa-Clebsch invariants are
+  //The Igusa-Clebsch invariants are
   I2:=8*J2;
   I4:=-96*J4+4*J2^2;
   I6:=-(576*J6-8*J2^3+160*J2*J4);
@@ -73,9 +73,9 @@ intrinsic PQMIgusaClebschDisc15(j::FldRatElt : LinYang:=true) -> SeqEnum
   {Given j from Baba-Granaths discriminant 15 family,
   create the Igusa-Clebsch invariants of the curve associated to j.}
 
-   //The Igusa-Clebsch invariants are
+  //The Igusa-Clebsch invariants are
 
-   // From X(15,1)/<w_15>
+  // From X(15,1)/<w_15>
   /*I2:=12*(j^4+15*j^3+105*j^2+125*j+10);
   I4:=45*(4*j+1)*(j+3)^2*(j-1)^4;
   I6:=9*(84*j^5+1414*j^4+8865*j^3+11157*j^2+3895*j+185)*(j+3)^2*(j-1)^4;
@@ -164,8 +164,8 @@ intrinsic PQMIgusaClebschDisc38(j::FldRatElt : LinYang:=true) -> SeqEnum
   s3:=675*j^8-2016*j^7+2600*j^6-8064*j^5+11610*j^4-6048*j^3+3240*j^2 +243;
   s5:=3^5*(j + 1)^2*( j^2 + 1)^2*( j^2 + 3)^2*( j^2 + j + 2)^2;
   s6:=3^5*(3*j^18 + 12*j^17 + 61*j^16 + 160*j^15 + 525*j^14 + 1068*j^13 + 2612*j^12 +
-4032*j^11 + 7533*j^10 + 8548*j^9 + 12532*j^8 + 9984*j^7 + 11971*j^6 +
-6180*j^5 + 6792*j^4 + 2208*j^3 + 2592*j^2 + 576*j + 435);
+  4032*j^11 + 7533*j^10 + 8548*j^9 + 12532*j^8 + 9984*j^7 + 11971*j^6 +
+  6180*j^5 + 6792*j^4 + 2208*j^3 + 2592*j^2 + 576*j + 435);
 
   psi4:=s2;
   psi6:=s3;

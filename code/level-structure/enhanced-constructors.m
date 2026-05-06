@@ -2,41 +2,41 @@
 declare type AlgQuatOrdRes[AlgQuatOrdResElt];
 
 declare attributes AlgQuatOrdRes :
-  quaternionorder,
-  quaternionideal;
+quaternionorder,
+quaternionideal;
 
 declare attributes AlgQuatOrdResElt:
-  element,
-  parent;
+element,
+parent;
 
 declare type AlgQuatProj[AlgQuatProjElt];
 
 declare attributes AlgQuatProj :
-  quaternionalgebra;
+quaternionalgebra;
 
 declare attributes AlgQuatProjElt :
-  element,
-  parent;
+element,
+parent;
 
 declare type AlgQuatEnh[AlgQuatEnhElt];
- 
+
 declare attributes AlgQuatEnh :
-  quaternionalgebra,
-  quaternionorder,
-  basering,
-  lhs,
-  rhs;
+quaternionalgebra,
+quaternionorder,
+basering,
+lhs,
+rhs;
 
 declare attributes AlgQuatEnhElt :
-  element,
-  parent;
+element,
+parent;
 
 intrinsic OmodNElement(OmodN::AlgQuatOrdRes, x::AlgQuatOrdElt) -> AlgQuatOrdResElt
   {Construct an element of the OmodN whose underlying element is x in O}
   elt := New(AlgQuatOrdResElt);
   elt`element := x;
   elt`parent := OmodN;
-  
+
   return elt;
 end intrinsic;
 
@@ -45,25 +45,25 @@ intrinsic ElementModuloScalars(BxmodFx::AlgQuatProj, x::AlgQuatElt) -> AlgQuatPr
   elt := New(AlgQuatProjElt);
   elt`element := x;
   elt`parent := BxmodFx;
-  
+
   return elt;
 end intrinsic;
 
 intrinsic EnhancedElement(Ocirc::AlgQuatEnh, tup::<>) -> AlgQuatEnhElt
   {Construct and element of the enhances semidirect product whose underling element is a tuple in
-   Autmu(O)x(O)^x or Autmu(O)x(O/N)^x }
-   //assert Type(tup[1]) eq 
+  Autmu(O)x(O)^x or Autmu(O)x(O/N)^x }
+  //assert Type(tup[1]) eq 
 
-   O:=Ocirc`rhs;
-   BxmodQx:=Ocirc`lhs;
+  O:=Ocirc`rhs;
+  BxmodQx:=Ocirc`lhs;
 
-   elt:= New(AlgQuatEnhElt);
-   elt`element := <BxmodQx!tup[1],O!tup[2]>;
-   elt`parent := Ocirc;
+  elt:= New(AlgQuatEnhElt);
+  elt`element := <BxmodQx!tup[1],O!tup[2]>;
+  elt`parent := Ocirc;
 
-   return elt;
+  return elt;
 end intrinsic;
- 
+
 
 intrinsic 'eq'(x::AlgQuatOrdResElt,y::AlgQuatOrdResElt) -> BoolElt 
   {Decide if x equals y in OmodN}
@@ -100,7 +100,7 @@ end intrinsic;
 
 intrinsic 'eq'(OmodN1::AlgQuatOrdRes,OmodN2::AlgQuatOrdRes) -> BoolElt 
   {Decide if OmodN1 equals OmodN2}
- 
+
   O1:=OmodN1`quaternionorder;
   O2:=OmodN2`quaternionorder;
 
@@ -108,33 +108,33 @@ intrinsic 'eq'(OmodN1::AlgQuatOrdRes,OmodN2::AlgQuatOrdRes) -> BoolElt
   N2:=OmodN2`quaternionideal;
 
   if StandardForm(QuaternionAlgebra(O1)) eq StandardForm(QuaternionAlgebra(O2))
-    and [ Eltseq(b) : b in Basis(O1) ] eq [ Eltseq(b) : b in Basis(O2) ]
-     and N1 eq N2 then
-    return true;
-  else 
-    return false;
-  end if;
+  and [ Eltseq(b) : b in Basis(O1) ] eq [ Eltseq(b) : b in Basis(O2) ]
+  and N1 eq N2 then
+  return true;
+else 
+  return false;
+end if;
 end intrinsic;
 
 
 intrinsic 'eq'(BxmodFx1::AlgQuatProj,BxmodFx2::AlgQuatProj) -> BoolElt 
   {Decide if BxmodFx1 equals BxmodFx2}
- 
+
   B1:=BxmodFx1`quaternionalgebra;
   B2:=BxmodFx2`quaternionalgebra;
 
   if StandardForm(B1) eq StandardForm(B2)
-    and BaseRing(B1) eq BaseRing(B2) then
-    return true;
-  else 
-    return false;
-  end if;
+  and BaseRing(B1) eq BaseRing(B2) then
+  return true;
+else 
+  return false;
+end if;
 end intrinsic;
 
 
 intrinsic 'eq'(Ocirc1::AlgQuatEnh,Ocirc2::AlgQuatEnh) -> BoolElt 
   {Decide if Ocirc1 equals Ocirc2}
- 
+
   O1:=Ocirc1`quaternionorder;
   O2:=Ocirc2`quaternionorder;
 
@@ -142,12 +142,12 @@ intrinsic 'eq'(Ocirc1::AlgQuatEnh,Ocirc2::AlgQuatEnh) -> BoolElt
   R2:=Ocirc2`basering;
 
   if StandardForm(QuaternionAlgebra(O1)) eq StandardForm(QuaternionAlgebra(O2))
-    and [ Eltseq(b) : b in Basis(O1) ] eq [ Eltseq(b) : b in Basis(O2) ]
-    and R1 eq R2 then
-    return true;
-  else 
-    return false;
-  end if;
+  and [ Eltseq(b) : b in Basis(O1) ] eq [ Eltseq(b) : b in Basis(O2) ]
+  and R1 eq R2 then
+  return true;
+else 
+  return false;
+end if;
 end intrinsic;
 
 intrinsic '*'(x::AlgQuatOrdResElt,y::AlgQuatOrdResElt) -> AlgQuatOrdResElt 
@@ -296,8 +296,8 @@ intrinsic Order(g::AlgQuatEnhElt) -> Any
 end intrinsic;
 
 intrinsic Norm(x::AlgQuatEnhElt) -> RngIntResElt
-{Norm of the element of the enhanced semidirect product as an element of (Z/N)^x}
-    return Norm(x`element[2]);
+  {Norm of the element of the enhanced semidirect product as an element of (Z/N)^x}
+  return Norm(x`element[2]);
 end intrinsic;
 
 intrinsic PrimitiveElement(x::AlgQuatElt) -> AlgQuatProjElt
@@ -323,7 +323,7 @@ end intrinsic;
 
 
 
-  
+
 intrinsic Parent(elt::AlgQuatOrdResElt) -> AlgQuatOrdRes
   {.}
   return elt`parent;    
@@ -375,7 +375,7 @@ intrinsic EnhancedSemidirectProduct(O::AlgQuatOrd: N:=0) -> AlgQuatEnh
 end intrinsic;
 
 intrinsic IsCoercible(OmodN::AlgQuatOrdRes, x::Any) -> BoolElt, .
-{.}
+  {.}
   N:=OmodN`quaternionideal;
   O:=OmodN`quaternionorder;
   ZmodN:=ResidueClassRing(N);
@@ -404,9 +404,9 @@ intrinsic IsCoercible(OmodN::AlgQuatOrdRes, x::Any) -> BoolElt, .
       return false, "Illegal Coercion";  
     end if;  
   elif IsCoercible(O,x) then 
-      x0:=Eltseq(O!x);
-      x1 := [ Integers()!(ZmodN!a) : a in x0 ];
-      return true, OmodNElement(OmodN,O!x1);
+    x0:=Eltseq(O!x);
+    x1 := [ Integers()!(ZmodN!a) : a in x0 ];
+    return true, OmodNElement(OmodN,O!x1);
   else
     return false, "Illegal Coercion";
   end if;
@@ -414,8 +414,8 @@ end intrinsic;
 
 
 intrinsic IsCoercible(BxmodFx::AlgQuatProj, x::Any) -> BoolElt, .
-{.}
- if Type(x) eq AlgQuatProjElt then
+  {.}
+  if Type(x) eq AlgQuatProjElt then
     if Parent(x) eq BxmodFx then
       return true, x;
     else
@@ -437,8 +437,8 @@ end intrinsic;
 
 
 intrinsic IsCoercible(Ocirc::AlgQuatEnh, g::Any) -> BoolElt, .
-{.}
-  
+  {.}
+
   if Type(g) eq AlgQuatEnhElt then 
     h:=g`element;
     assert Type(h) eq Tup;
@@ -469,7 +469,7 @@ intrinsic IsCoercible(Ocirc::AlgQuatEnh, g::Any) -> BoolElt, .
     return false;
   end if;
 end intrinsic;
- 
+
 
 
 
@@ -486,9 +486,9 @@ end intrinsic;
 
 
 intrinsic Norm(x::AlgQuatOrdResElt) -> RngIntResElt
-{Norm of the element of the enhanced semidirect product as an element of (Z/N)^x}
-    N := Modulus(Parent(x));
-    return Integers(N)!Norm(x`element);
+  {Norm of the element of the enhanced semidirect product as an element of (Z/N)^x}
+  N := Modulus(Parent(x));
+  return Integers(N)!Norm(x`element);
 end intrinsic;
 
 intrinsic Set(OmodN::AlgQuatOrdRes) -> Set 
@@ -503,8 +503,8 @@ intrinsic Set(OmodN::AlgQuatOrdRes) -> Set
 end intrinsic;
 
 intrinsic Modulus(OmodN::AlgQuatOrdRes) -> RngIntElt
-{Return the level N of OmodN}
-    return OmodN`quaternionideal;
+  {Return the level N of OmodN}
+  return OmodN`quaternionideal;
 end intrinsic;
 
 intrinsic UnitGroup(OmodN::AlgQuatOrdRes) -> GrpMat, Map
@@ -531,33 +531,33 @@ end intrinsic;
 
 
 intrinsic Print(elt::AlgQuatOrdResElt)
-{.}
+  {.}
   printf "%o", elt`element;
 end intrinsic;
 
 intrinsic Print(OmodN::AlgQuatOrdRes)
-{.}
+  {.}
   printf "Quotient of %o by %o", OmodN`quaternionorder, OmodN`quaternionideal;
 end intrinsic;
 
 intrinsic Print(elt::AlgQuatProjElt)
-{.}
+  {.}
   printf "%o", elt`element;
 end intrinsic;
 
 intrinsic Print(BxmodFx::AlgQuatProj)
-{.}
+  {.}
   printf "Quotient by scalars of %o", BxmodFx`quaternionalgebra;
 end intrinsic;
 
 
 intrinsic Print(elt::AlgQuatEnhElt)
-{.}
+  {.}
   printf "%o", elt`element;
 end intrinsic;
 
 intrinsic Print(Ocirc::AlgQuatEnh)
-{.}
+  {.}
   printf "Semidirect product of Aut(O) and O^x or (O/N)^x where O is %o", Ocirc`quaternionorder;
 end intrinsic;
 
