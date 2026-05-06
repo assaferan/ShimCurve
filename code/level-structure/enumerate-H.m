@@ -128,6 +128,7 @@ intrinsic EnumerateGerbiestSurjectiveH(Enh::AlgQuatEnh) -> SeqEnum[Re] // OmodN:
   Ahom := AtoGL4(Enh);
   G := GL4sub(Enh);
   KG := NormalizerKernelGL4(Enh);
+  assert IsNormal(G, KG);
 
   fake_label := Sprintf("%o.a", #G); // The FiniteGroup code expects a label, but only the order is actually used
   GG := NewLMFDBGrp(G, fake_label);
@@ -147,7 +148,7 @@ intrinsic EnumerateGerbiestSurjectiveH(Enh::AlgQuatEnh) -> SeqEnum[Re] // OmodN:
 
   // Compute the list of subgroups
   t0 := Cputime();
-  subs := Subgroups(G);
+  subs := Subgroups(G, KG);
   vprint User1: "MagmaSubgroups", Cputime() - t0;
 
   t0 := Cputime();
@@ -158,19 +159,12 @@ intrinsic EnumerateGerbiestSurjectiveH(Enh::AlgQuatEnh) -> SeqEnum[Re] // OmodN:
   surjH := [H[i] : i in [1..#subs] | detimages[i] eq phiN];
   trivH := [H[i] : i in [1..#subs] | detimages[i] eq 1];
 
-  t0 := Cputime();
-  surj_gerby_H := [H : H in surjH | KG subset H`subgroup];
-  print "Gerbysurj", #surj_gerby_H, #surjH;
-  triv_gerby_H := [H : H in trivH | KG subset H`subgroup];
-  print "Gerbytriv", #triv_gerby_H, #surjH;
-  vprint User1: "Gerby", Cputime() - t0; t0 := Cputime();
-
   // FiniteGroup code prefers lower index earlier
-  Reverse(~surj_gerby_H); Reverse(~trivH);
+  Reverse(~surjH); Reverse(~trivH);
 
   // Create lattices
-  Latfull`subs := [SubgroupLatElement(Latfull, surj_gerby_H[i]`subgroup : i:=i, subgroup_count:=surj_gerby_H[i]`length) : i in [1..#surj_gerby_H]];
-  Lat1`subs := [SubgroupLatElement(Lat1, triv_gerby_H[i]`subgroup : i:=i, subgroup_count:=triv_gerby_H[i]`length) : i in [1..#triv_gerby_H]];
+  Latfull`subs := [SubgroupLatElement(Latfull, surjH[i]`subgroup : i:=i, subgroup_count:=surjH[i]`length) : i in [1..#surjH]];
+  Lat1`subs := [SubgroupLatElement(Lat1, trivH[i]`subgroup : i:=i, subgroup_count:=trivH[i]`length) : i in [1..#trivH]];
 
   t0 := Cputime();
   // This needs to be sped up (lattice edges are hard); we turn it off for now.
@@ -282,9 +276,14 @@ GP_SHIM_RF := recformat< level : Integers(),
 			 coarse_index,
 			 fine_label,
 			 gerbiness,
+                         aut_gerbiness,
 			 is_coarse,
-			 psl2label
+			 psl2label,
+                         scalar_label
 		       >;
+
+// Minimal record shape for createRecord (needs subgroup + order only).
+SUBMEET_RF := recformat<subgroup : GrpMat, order : Integers()>;
 
 function createRecord(H)
     s := rec< GP_SHIM_RF | >;
@@ -295,7 +294,9 @@ function createRecord(H)
     Ahom := AtoGL4(Enh);
     homtoB := AtoBx(Enh);
     G := GL4sub(Enh);
+    KG := NormalizerKernelGL4(Enh);
     O := Enh`quaternionorder;
+    AutFull := Aut(O,mu);
 
     Henhgens := [GL4ToPair(Hgp.i, O, Ahom) : i in [1..Ngens(Hgp)]];
     aut_mu_norms := [Abs(SquarefreeFactorization(Integers()!Norm(homtoB(pair[1])`element))) : pair in Henhgens];
@@ -307,13 +308,15 @@ function createRecord(H)
     s`index:=Order(G) div order;
     s`coarse_index := s`index;
     s`fuchsian_index:=FuchsianIndex(H);
-    s`gerbiness:=#NormalizerKernelGL4(Enh);
+    s`gerbiness:=#KG;
+    s`aut_gerbiness:=#{GL4ToPair(x, O, Ahom)[1] : x in KG};
     s`torsion:=PrimaryAbelianInvariants(FixedSubspace(Hgp));
-    s`Glabel:=GroupLabel(Hgp);
+    s`Glabel:=GroupLabel(Hgp); // TODO: this should maybe be   N eq level select GroupLabel(Hgp) else GroupLabel(Hgp / getKernelOfReduction(OmodN, N div level, G meet ONxinGL4));
     s`galEnd:=GroupLabel(Domain(Ahom));
     s`autmuO_norms:=aut_mu_norms;
     s`is_split:=(order eq #(Hgp meet Image(Ahom)) * #(Hgp meet ONx(Enh)));
-    s`generators:=[<homtoB(g[1]),g[2]> : g in Henhgens];
+    s`generators:=[<homtoB(g[1]),g[2]> : g in Henhgens]; // TODO: this should maybe be   N eq level select [<AutFull(g[1]),g[2]> : g in Henhgens] else [<AutFull(g[1]),[Integers()!x mod level : x in Eltseq(g[2])]> : g in Henhgens];
+    // TODO: maybe need    s`generators:= [g : g in Set(s`generators)];
     s`ram_data_elts:=H`sigma;
     s`discO := Discriminant(O);
     s`discB := Discriminant(Algebra(O));
@@ -336,6 +339,11 @@ function createRecord(H)
     s`nu3 := nu[3];
     s`nu4 := nu[4];
     s`nu6 := nu[6];
+
+    // This is testing the genus formula from Gauss-Bonnet, see (39.4.2) in [JV]
+    area_term := s`aut_gerbiness * s`fuchsian_index * Area(O) / #Domain(AutFull);
+    elliptic_term := 1/2 * &+[Rationals() | nu[e]*(1 - 1/e) : e in [2,3,4,6]];
+    assert s`genus eq 1 + area_term - elliptic_term;
 
     return s;
 end function;
@@ -373,7 +381,7 @@ procedure updateLabels(~subs, G)
     end for;
 end procedure;
 
-intrinsic GenerateDataForGerbiestSurjectiveH(O::AlgQuatOrd,mu::AlgQuatElt,Ns::SeqEnum[RngIntElt],LatLookup::Assoc) -> SeqEnum[Rec], Assoc
+intrinsic GenerateDataForGerbiestSurjectiveH(O::AlgQuatOrd,mu::AlgQuatElt,Ns::SeqEnum[RngIntElt],~LatLookup::Assoc) -> SeqEnum[Rec], Assoc
 {Returns a list of records, each representing a line to be added to the database gps_shimura_test, together with an updated LatLookup.
 If N in Ns, then the every integer m dividing N should be in Ns}
 
@@ -428,124 +436,250 @@ function strJoin(char, strings)
     return s;
 end function;
 
+/*
+List below produced in sage using:
+
+from lmfdb import db
+sage: for k in sorted(db.gps_shimura_test.col_type.keys()):
+     print('<"%s","%s">,'%(k,db.gps_shimura_test.col_type[k]))
+
+but note that we leave out id and put label first (for update_from_file)
+*/
+GPS_SHIMURA_FIELDS := [
+<"label","text">,
+<"Glabel","text">,
+<"all_degree1_points_known","boolean">,
+<"aut_gerbiness","integer">,
+<"autmuO_norms","integer[]">,
+<"bad_primes","integer[]">,
+<"cm_discriminants","integer[]">,
+<"coarse_class","text">,
+<"coarse_class_num","integer">,
+<"coarse_index","integer">,
+<"coarse_label","text">,
+<"coarse_num","integer">,
+<"conductor","integer[]">,
+<"curve_label","text">,
+<"deg_mu","integer">,
+<"dims","integer[]">,
+<"discB","integer">,
+<"discO","integer">,
+<"fine_label","text">,
+<"fine_num","integer">,
+<"fuchsian_index","integer">,
+<"galEnd","text">,
+<"generators","integer[]">,
+<"genus","integer">,
+<"genus_minus_rank","integer">,
+<"gerbiness","integer">,
+<"has_obstruction","smallint">,
+<"index","integer">,
+<"is_coarse","boolean">,
+<"is_split","boolean">,
+<"lattice_labels","text[]">,
+<"lattice_x","integer[]">,
+<"level","integer">,
+<"level_is_squarefree","boolean">,
+<"level_radical","integer">,
+<"log_conductor","numeric">,
+<"models","smallint">,
+<"mu_label","text">,
+<"mults","integer[]">,
+<"name","text">,
+<"newforms","text[]">,
+<"nu2","integer">,
+<"nu3","integer">,
+<"nu4","integer">,
+<"nu6","integer">,
+<"num_bad_primes","integer">,
+<"num_known_degree1_noncm_points","integer">,
+<"num_known_degree1_points","integer">,
+<"obstructions","integer[]">,
+<"order_label","text">,
+<"parents","text[]">,
+<"parents_conj","integer[]">,
+<"pointless","boolean">,
+<"power","boolean">,
+<"psl2label","text">,
+<"q_gonality","integer">,
+<"q_gonality_bounds","integer[]">,
+<"qbar_gonality","integer">,
+<"qbar_gonality_bounds","integer[]">,
+<"ram_data_elts","numeric[]">,
+<"rank","integer">,
+<"reductions","text[]">,
+<"scalar_label","text">,
+<"simple","boolean">,
+<"squarefree","boolean">,
+<"torsion","integer[]">,
+<"trace_hash","bigint">,
+<"traces","integer[]">
+];
+
 intrinsic WriteHeaderToFile(file::IO)
 {Write the header to a file.}
-    fields := ["Glabel", "all_degree1_points_known", "autmuO_norms", "bad_primes", "cm_discriminants", "coarse_class", "coarse_class_num", "coarse_index", "coarse_label", "coarse_num", "conductor", "curve_label", "deg_mu", "dims", "discB", "discO", "fine_label", "fine_num", "fuchsian_index", "galEnd", "generators", "genus", "genus_minus_rank", "gerbiness", "has_obstruction", "index", "is_coarse", "is_split", "label", "lattice_labels", "lattice_x", "level", "level_is_squarefree", "level_radical", "log_conductor", "models", "mu_label", "mults", "name", "newforms", "nu2", "nu3", "nu4", "nu6", "num_bad_primes", "num_known_degree1_noncm_points", "num_known_degree1_points", "obstructions", "order_label", "parents", "parents_conj", "pointless", "power", "psl2label", "q_gonality", "q_gonality_bounds", "qbar_gonality", "qbar_gonality_bounds", "ram_data_elts", "rank", "reductions", "scalar_label", "simple", "squarefree", "torsion", "trace_hash", "traces"];
+    fields := [x[1] : x in GPS_SHIMURA_FIELDS];
+    types := [x[2] : x in GPS_SHIMURA_FIELDS];
 
-    types := ["text", "boolean", "integer[]", "integer[]", "integer[]", "text", "integer", "integer", "text", "integer", "integer[]", "text", "integer", "integer[]", "integer", "integer", "text", "integer", "integer", "text", "integer[]", "integer", "integer", "integer", "smallint", "integer", "boolean", "boolean", "text", "text[]", "integer[]", "integer", "boolean", "integer", "numeric", "smallint", "text", "integer[]", "text", "text[]", "integer", "integer", "integer", "integer", "integer", "integer", "integer", "integer[]", "text", "text[]", "integer[]", "boolean", "boolean", "text", "integer", "integer[]", "integer", "integer[]", "numeric[]", "integer", "text[]", "text", "boolean", "boolean", "integer[]", "bigint", "integer[]"];
-
-    assert #types eq #fields;
-
-    labels_header := strJoin("?", fields) cat "\n";
+    labels_header := strJoin("|", fields) cat "\n";
 
     fprintf file, labels_header;
 
-    types_header := strJoin("?", types) cat "\n\n";
+    types_header := strJoin("|", types) cat "\n\n";
 
     fprintf file, types_header;
 
     return;
 end intrinsic;
 
-intrinsic WriteSubgroupsDataToFile(file::IO, subs::SeqEnum[Rec])
+intrinsic WriteSubgroupsDataToFile(file::IO, subs::SeqEnum[Rec], O::AlgQuatOrd)
 {Write the list of subgroup records to a file, without the header}
     for s in subs do
-        gens_readable:= [ writeSeqEnum(Eltseq(g[1]`element) cat Eltseq(g[2])) : g in s`generators ];
-	perms_readable:=[ EncodePerm(p):  p in s`ram_data_elts];
+      gens_readable:= [ writeSeqEnum(Eltseq(O!g[1]`element) cat Eltseq(O!g[2])) : g in s`generators ];
+      perms_readable:=[ EncodePerm(p):  p in s`ram_data_elts];
 
-	bad_primes := PrimeDivisors(s`discO * s`level);
+      bad_primes := PrimeDivisors(s`discO * s`level);
 
-	// These q-bounds only hold when the bottom curve is genus 0
-	q_gon_bounds := [1, 2*s`index];
+      // TODO: These are naive bounds and should be improved
+      if s`genus eq 0 then
+          q_gon_bounds := [1, 2];
+          qbar_gon_bounds := [1, 1];
+      if s`genus eq 1 then
+          q_gon_bounds := [2, 2*s`index];
+          qbar_gon_bounds := [2, 2];
+      else
+          q_gon_bounds := [2, 2*(s`genus - 1)];
+          qbar_gon_bounds := [2, (s`genus + 3) div 2];
+      end if;
+      if q_gon_bounds[1] eq q_gon_bounds[2] then
+          q_gon := q_gon_bounds[1];
+      else
+          q_gon := "\\N";
+      end if;
+      if qbar_gon_bounds[1] eq qbar_gon_bounds[2] then
+          qbar_gon := qbar_gon_bounds[1];
+      else
+          qbar_gon := "\\N";
+      end if;
+      
 
-	if (s`genus in [0,1]) then
-	    qbar_gon_bounds := [1,2];
-	else
-	    qbar_gon_bounds := [1, 2*(s`genus-1)];
-	end if;
+      s_fields_assoc := AssociativeArray();
+      s_fields_assoc["Glabel"] := s`Glabel;
+      s_fields_assoc["all_degree1_points_known"] := "F";
+      s_fields_assoc["aut_gerbiness"] := s`aut_gerbiness;
+      s_fields_assoc["autmuO_norms"] := writeSeqEnum(s`autmuO_norms);
+      s_fields_assoc["bad_primes"] := writeSeqEnum(bad_primes);
+      s_fields_assoc["cm_discriminants"] := "\\N";
+      s_fields_assoc["coarse_class"] := s`coarse_class;
+      s_fields_assoc["coarse_class_num"] := s`coarse_class_num;
+      s_fields_assoc["coarse_index"] := s`coarse_index;
+      s_fields_assoc["coarse_label"] := s`coarse_label;
+      s_fields_assoc["coarse_num"] := s`coarse_num;
+      s_fields_assoc["conductor"] := "\\N";
+      s_fields_assoc["curve_label"] := "\\N";
+      s_fields_assoc["deg_mu"] := s`deg_mu;
+      s_fields_assoc["dims"] := "\\N";
+      s_fields_assoc["discB"] := s`discB;
+      s_fields_assoc["discO"] := s`discO;
+      s_fields_assoc["fine_label"] := s`fine_label;
+      s_fields_assoc["fine_num"] := "\\N";
+      s_fields_assoc["fuchsian_index"] := s`fuchsian_index;
+      s_fields_assoc["galEnd"] := s`galEnd;
+      s_fields_assoc["generators"] := writeSeqEnum(gens_readable);
+      s_fields_assoc["genus"] := s`genus;
+      s_fields_assoc["genus_minus_rank"] := "\\N";
+      s_fields_assoc["gerbiness"] := s`gerbiness;
+      s_fields_assoc["has_obstruction"] := "\\N";
+      s_fields_assoc["index"] := s`index;
+      s_fields_assoc["is_coarse"] := writeBoolean(s`is_coarse);
+      s_fields_assoc["is_split"] := writeBoolean(s`is_split);
+      s_fields_assoc["label"] := s`label;
+      s_fields_assoc["lattice_labels"] := "\\N";
+      s_fields_assoc["lattice_x"] := "\\N";
+      s_fields_assoc["level"] := s`level;
+      s_fields_assoc["level_is_squarefree"] := writeBoolean(IsSquarefree(s`level));
+      s_fields_assoc["level_radical"] := &*PrimeDivisors(s`level);
+      s_fields_assoc["log_conductor"] := "\\N";
+      s_fields_assoc["models"] := "\\N";
+      s_fields_assoc["mu_label"] := s`mu_label;
+      s_fields_assoc["mults"] := "\\N";
+      s_fields_assoc["name"] := "\\N";
+      s_fields_assoc["newforms"] := "\\N";
+      s_fields_assoc["nu2"] := s`nu2;
+      s_fields_assoc["nu3"] := s`nu3;
+      s_fields_assoc["nu4"] := s`nu4;
+      s_fields_assoc["nu6"] := s`nu6;
+      s_fields_assoc["num_bad_primes"] := #bad_primes;
+      s_fields_assoc["num_known_degree1_noncm_points"] := "\\N";
+      s_fields_assoc["num_known_degree1_points"] := "\\N";
+      s_fields_assoc["obstructions"] := "\\N";
+      s_fields_assoc["order_label"] := s`order_label;
+      s_fields_assoc["parents"] := "{}";
+      s_fields_assoc["parents_conj"] := "\\N";
+      s_fields_assoc["pointless"] := "\\N";
+      s_fields_assoc["power"] := "\\N";
+      s_fields_assoc["psl2label"] := s`psl2label;
+      s_fields_assoc["q_gonality"] := q_gon;
+      s_fields_assoc["q_gonality_bounds"] := writeSeqEnum(q_gon_bounds);
+      s_fields_assoc["qbar_gonality"] := qbar_gon;
+      s_fields_assoc["qbar_gonality_bounds"] := writeSeqEnum(qbar_gon_bounds);
+      s_fields_assoc["ram_data_elts"] := writeSeqEnum(perms_readable);
+      s_fields_assoc["rank"] := "\\N";
+      s_fields_assoc["reductions"] := "\\N";
+      s_fields_assoc["scalar_label"] := s`scalar_label;
+      s_fields_assoc["simple"] := "\\N";
+      s_fields_assoc["squarefree"] := "\\N";
+      s_fields_assoc["torsion"] := writeSeqEnum(s`torsion);
+      s_fields_assoc["trace_hash"] := "\\N";
+      s_fields_assoc["traces"] := "\\N";
 
-	s_fields := [* s`Glabel,
-		       "F",
-		       writeSeqEnum(s`autmuO_norms),
-		       writeSeqEnum(bad_primes),
-		       "\\N",
-		       s`coarse_class,
-		       s`coarse_class_num,
-		       s`coarse_index,
-		       s`coarse_label,
-		       s`coarse_num,
-		       "\\N",
-		       "\\N",
-		       s`deg_mu,
-		       "\\N",
-		       s`discB,
-		       s`discO,
-		       s`fine_label,
-		       "\\N",
-		       s`fuchsian_index,
-		       s`galEnd,
-		       writeSeqEnum(gens_readable),
-		       s`genus,
-		       "\\N",
-		       s`gerbiness,
-		       "\\N",
-		       s`index,
-		       writeBoolean(s`is_coarse),
-		       writeBoolean(s`is_split),
-		       s`label,
-		       "\\N",
-		       "\\N",
-		       s`level,
-		       writeBoolean(IsSquarefree(s`level)),
-		       &*PrimeDivisors(s`level),
-		       "\\N",
-		       "\\N",
-		       s`mu_label,
-		       "\\N",
-		       "\\N",
-		       "{}",
-		       s`nu2,
-		       s`nu3,
-		       s`nu4,
-		       s`nu6,
-		       #bad_primes,
-		       "\\N",
-		       "\\N",
-		       "\\N",
-		       s`order_label,
-		       "{}",
-		       "\\N",
-		       "\\N",
-		       "\\N",
-		       "\\N",
-		       "\\N",
-		       writeSeqEnum(q_gon_bounds),
-		       "\\N",
-		       writeSeqEnum(qbar_gon_bounds),
-		       writeSeqEnum(perms_readable),
-		       "\\N",
-		       "\\N",
-		       "1.1.1",
-		       "\\N",
-		       "\\N",
-		       writeSeqEnum(s`torsion),
-		       "\\N",
-		       "\\N" *];
+      s_fields := [* s_fields_assoc[fld[1]] : fld in GPS_SHIMURA_FIELDS *];
 
-	assert #s_fields eq 67;
-        fprintf file, strJoin("?", [Sprintf("%o", f) : f in s_fields]) cat "\n";
+      assert #s_fields eq 68;
+      fprintf file, strJoin("|", [Sprintf("%o", f) : f in s_fields]) cat "\n";
     end for;
     return;
 end intrinsic;
 
-intrinsic WriteHeaderAndSubgroupsDataToFile(subs::SeqEnum[Rec])
+intrinsic WriteHeaderAndSubgroupsDataToFile(subs::SeqEnum[Rec], O::AlgQuatOrd)
 {Write the list of subgroup records to a file, together with the header.}
     assert #subs gt 0;
     filename:=Sprintf("data/genera-tables/genera-D%o-deg%o-N%o.m",subs[1]`discO,subs[1]`deg_mu,subs[1]`level);
     file := Open(filename, "w");
     WriteHeaderToFile(file);
-    WriteSubgroupsDataToFile(file, subs);
+    WriteSubgroupsDataToFile(file, subs, O);
     return;
+end intrinsic;
+
+
+intrinsic EnhancedPermutationRepresentationMod2(O::AlgQuatOrd,mu::AlgQuatElt) -> Any
+  {return the permutation representation Autmu(O) \ltimes (O/N)^x -> S_n}
+  
+  Omod2:=quo(O,2);
+  Oenh:=EnhancedSemidirectProduct(O : N:=2);
+
+  Omod2_elements := Setseq(Set(Omod2));
+  Omod2_units := [ a : a in Omod2_elements | IsUnit(a) ];
+
+  autmuO := Aut(O,mu);
+  autmuOelts := [ autmuO(x) : x in Domain(autmuO) ];
+
+  enhanced_elements:= [ Oenh!<a,b> : a in autmuOelts, b in Omod2_units ];
+  assert #Set(enhanced_elements) eq #enhanced_elements;
+  enhanced_elements := Set(enhanced_elements);
+  enhanced_elements := SetToIndexedSet(enhanced_elements);
+
+  n:=#enhanced_elements;
+  SymX:=Sym(enhanced_elements);
+  permrep := map< enhanced_elements -> SymX | g :-> SymX![ g*x : x in enhanced_elements ] >; 
+
+  permrep_elts:= [ permrep(g) : g in enhanced_elements ];
+  Gperm:= sub< SymX | permrep_elts >;
+
+  idG := Oenh!<1, [1,0,0,0]>;
+  embedG := map< Oenh -> Gperm | g :-> Gperm!permrep(g), p :-> Image(p,idG) >;
+
+  return embedG;
 end intrinsic;
 
 
