@@ -40,7 +40,7 @@ end intrinsic;
 
 intrinsic GeneraTableToRecords(D::RngIntElt,del::RngIntElt,N::RngIntElt : genus:=-1, fuchsindex:=-1, endogroup:="any", torsioninvariants:=[-1], AutmuOnorms:={0}, sort:=true) -> Any 
   {}
-  filename:=Sprintf("ShimCurve/data/genera-tables/genera-D%o-deg%o-N%o.m",D,del,N);
+  filename:=Sprintf("data/genera-tables/genera-D%o-deg%o-N%o.m",D,del,N);
   r:=Open(filename,"r");
 
   records:=[];

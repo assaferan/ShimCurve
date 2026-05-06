@@ -1,36 +1,51 @@
 
 
-intrinsic Mod2GaloisMapPQM(X::CrvHyp : prec:=30) -> Any 
+intrinsic Mod2GaloisMapPQM(X::CrvHyp : prec:=30, timing_steps:=false) -> Any 
   {Given X/F such that Jac(X) is a PQM surface, the 2-torsion 
   A[2] is free of rank 1 as an O/2-module. Let Q be an O/2-basis element. 
   Then we can write Q^sigma = a_sigma * Q for any sigma \in GalF. We return the map 
             GalF --> (O/2)^x,   sigma |--> a_sigma   
   where it factors through adjoining the 2-torsion field 
-  and the endomorphism field to F.}
+  and the endomorphism field to F.
+   Optional timing_steps:=true prints cumulative CPU time after each major step (for locating stalls).}
+
+  t0 := Cputime();
 
   CC:=ComplexFieldExtra(prec);
-  //CC`epscomp:=10^-Floor(prec/2);
+  RR:=RealField(prec);
+  eps_xy:=RR!10^(-Max(Floor(prec / 6), 8));
+
   assert BaseRing(X) eq Rationals();
   assert IsSimplifiedModel(X);
   B1,B2,B3:=HeuristicEndomorphismAlgebra( X : CC:=true);
   assert IsQuaternionAlgebra(B2);
+  if timing_steps then printf "[Mod2GaloisMapPQM +%os cpu] HeuristicEndomorphismAlgebra done\n", Cputime(t0); end if;
 
   f:=HyperellipticPolynomials(X);
   XR:=RiemannSurface(f,2 : Precision:=prec);
-  //assert that the basepoint is of the form (x,0)
-  assert Coordinates(XR`BasePoint)[2] eq 0;
+  sb:=BasePoint(XR);
+  seq:=Coordinates(sb);
+  assert #seq ge 2;
+  RS_BasePt:=XR![CC!s : s in seq];
+  c:=Coordinates(RS_BasePt);
+  assert Abs(Im(c[2])) lt eps_xy and Abs(Re(c[2])) lt eps_xy;
+  if timing_steps then printf "[Mod2GaloisMapPQM +%os cpu] RiemannSurface + BasePoint ready\n", Cputime(t0); end if;
 
 
   //We just use Polredbest since combining with Polredabs often runs out of memory.
 	QA2:=SplittingField(f);
   QA2:=NumberField(Polredbest(DefiningPolynomial(QA2)));
+  if timing_steps then printf "[Mod2GaloisMapPQM +%os cpu] QA2 = splitting field of f (deg %o)\n", Cputime(t0), Degree(QA2); end if;
+
 	L:=HeuristicEndomorphismFieldOfDefinition(X);
   L:=NumberField(Polredbest(DefiningPolynomial(L)));
+  if timing_steps then printf "[Mod2GaloisMapPQM +%os cpu] Endomorphism field L ready (deg %o)\n", Cputime(t0), Degree(L); end if;
 
 	M:=Compositum(QA2,L);
   Mdef:=DefiningPolynomial(M);
   Mdefred:=Polredbest(Mdef);
   M:=NumberField(Mdefred);
+  if timing_steps then printf "[Mod2GaloisMapPQM +%os cpu] Compositum M ready (deg %o)\n", Cputime(t0), Degree(M); end if;
 
   if Degree(M) eq Degree(QA2) then 
     print "L is a subsfield of QA2";
@@ -41,7 +56,9 @@ intrinsic Mod2GaloisMapPQM(X::CrvHyp : prec:=30) -> Any
 	ooplaces:=InfinitePlaces(M);
   //CAREFUL: we choose an embedding here which affects the final output.
 	embC:=ooplaces[1];
+  if timing_steps then printf "[Mod2GaloisMapPQM +%os cpu] starting AutomorphismGroup(M) ...\n", Cputime(t0); end if;
   Gal,auts,map:=AutomorphismGroup(M);
+  if timing_steps then printf "[Mod2GaloisMapPQM +%os cpu] AutomorphismGroup(M) done (|Gal|=%o)\n", Cputime(t0), #Gal; end if;
 
   //These are the roots a_i of the hyperelliptic polynomial
   // [(a_2,0)] - [(a_1,0)] will be an O/2O-basis element of A[2](C)
@@ -49,11 +66,14 @@ intrinsic Mod2GaloisMapPQM(X::CrvHyp : prec:=30) -> Any
   frootsM:=[ a[1] : a in Roots(ChangeRing(f,M))];
   frootsC:=[ CC!Evaluate(a,embC) : a in frootsM ];
   //Let's find which element x0 of frootsM corresponds to the basepoint (x0,0) of the Riemann surface. 
-  exists(x0){ z : z in frootsM | Abs(Evaluate(z,embC)-Coordinates(XR`BasePoint)[1]) lt RealField(20)!0.00000000000000001 };
+  assert exists(x0){ z : z in frootsM | Abs(Evaluate(z,embC)-Coordinates(RS_BasePt)[1]) lt RealField(20)!0.00000000000000001 };
+  if timing_steps then printf "[Mod2GaloisMapPQM +%os cpu] roots in M matched to RS base point\n", Cputime(t0); end if;
   
 
   //This shows that the action of Gal on frootsM is a RIGHT action.
+  if timing_steps then printf "[Mod2GaloisMapPQM +%os cpu] checking Galois action on roots (triple forall) ...\n", Cputime(t0); end if;
   assert forall(elt){ <g,h,r> : g,h in Gal, r in frootsM | map(h)(map(g)(r)) eq map(g*h)(r) };
+  if timing_steps then printf "[Mod2GaloisMapPQM +%os cpu] Galois action check done\n", Cputime(t0); end if;
   //Let's make a Gset out of the roots:
   frootsMset:=Set(frootsM);
   assert #frootsMset eq #frootsM;
@@ -64,10 +84,13 @@ intrinsic Mod2GaloisMapPQM(X::CrvHyp : prec:=30) -> Any
   //We were previously choosing a rational root as the base point of the Riemann surface,
   //Now we use the default basepoint and see which root in M corresponds to this basepoint so that we can act on it by Galois. 
 
+  if timing_steps then printf "[Mod2GaloisMapPQM +%os cpu] BigPeriodMatrix(XR) ...\n", Cputime(t0); end if;
 	BPM:=ChangeRing(BigPeriodMatrix(XR),CC);
+  if timing_steps then printf "[Mod2GaloisMapPQM +%os cpu] BigPeriodMatrix done\n", Cputime(t0); end if;
 
   GL4Z:=GL(4,Integers());
   //endos:=HeuristicEndomorphismRepresentation( X : CC:=true);
+  if timing_steps then printf "[Mod2GaloisMapPQM +%os cpu] GeometricEndomorphismRepresentationCC ...\n", Cputime(t0); end if;
   endos := GeometricEndomorphismRepresentationCC(BPM);
   endosM2:=[ ChangeRing(m[1],CC) : m in endos ];
   endosM4:=[ ChangeRing(m[2],Rationals()) : m in endos ]; 
@@ -79,6 +102,7 @@ intrinsic Mod2GaloisMapPQM(X::CrvHyp : prec:=30) -> Any
   Obasis:=[ maptoB(b) : b in endosM4 ];
   O:=QuaternionOrder(Obasis : IsBasis:=true);
   assert Basis(O) eq Obasis;
+  if timing_steps then printf "[Mod2GaloisMapPQM +%os cpu] quaternion order O from periods (disc=%o)\n", Cputime(t0), Discriminant(O); end if;
   a,b,c,d:=Explode(endosM2);
   OtoM2C := map< O -> KMatrixSpace(CC,2,2) | a :-> &+[ Eltseq(O!a)[i]*endosM2[i] : i in [1..4] ] >;
   assert forall(e){ Basis(O)[i] : i in [1..4] | OtoM2C(Basis(O)[i]) eq endosM2[i] };
@@ -98,9 +122,12 @@ intrinsic Mod2GaloisMapPQM(X::CrvHyp : prec:=30) -> Any
   //printf "P1 is a %ox%o matrix = \n%o\n\n",  NumberOfRows(P1), NumberOfColumns(P1), P1;
 
   //Check that M*PM = PM*R in the notation of Costa-Mascot-Sijsling-Voight.
+  if timing_steps then printf "[Mod2GaloisMapPQM +%os cpu] period/endomorphism commutation check ...\n", Cputime(t0); end if;
   assert forall(e){ endo : endo in endos | NumericalRank(ChangeRing(endo[1],CC)*ChangeRing(BPM,CC) - ChangeRing(BPM,CC)*ChangeRing(endo[2],CC) : Epsilon := RealField(prec)!10^(-Floor(prec/5))) eq 0 };
+  if timing_steps then printf "[Mod2GaloisMapPQM +%os cpu] period/endomorphism commutation check done\n", Cputime(t0); end if;
 
 	Latendo:=RealLatticeOfPeriodMatrix(BPM);
+  if timing_steps then printf "[Mod2GaloisMapPQM +%os cpu] RealLatticeOfPeriodMatrix done\n", Cputime(t0); end if;
 
   //The columns of PM and 1/2*BPM are the same, but not necessarily in the same order, which we assert here.
   //Infact if 1/2BPM = [ S1 S2 ] then PM = [ S2 S1 ].
@@ -133,11 +160,12 @@ intrinsic Mod2GaloisMapPQM(X::CrvHyp : prec:=30) -> Any
   O_elts:=[ O!(coef[1]*Obasis[1] + coef[2]*Obasis[2] + coef[3]*Obasis[3] + coef[4]*Obasis[4]) : coef in coefs ];
   
 
+  if timing_steps then printf "[Mod2GaloisMapPQM +%os cpu] cyclic-modulus search (AbelJacobi loop) ...\n", Cputime(t0); end if;
   cyclic_module:=[];
   k:=1;
   while #cyclic_module lt 16 do
     //Q is an O/2O basis element coming from the roots of X after applying Abel-Jacobi 
-    Q:=AbelJacobi(XR![frootsC[k],0],XR`BasePoint);
+    Q:=AbelJacobi(XR![frootsC[k],0],RS_BasePt);
     //1/2*P1 because this is the change of basis required from the small period matrix lattice to Latendo
     k:=k+1;
     twotorsion_points:=[ OtoM2C(a)*Q : a in O_elts ];
@@ -146,6 +174,7 @@ intrinsic Mod2GaloisMapPQM(X::CrvHyp : prec:=30) -> Any
     cyclic_module := [ twotorsion_points[i] : i in [1..#twotorsion_points] 
     | not(exists(e){ twotorsion_points[j] : j in [1..#twotorsion_points] | j lt i and IsCoercible(Latendo,Eltseq(twotorsion_points_real[i]-twotorsion_points_real[j])) }) ];
   end while;
+  if timing_steps then printf "[Mod2GaloisMapPQM +%os cpu] cyclic-modulus search done (loop ended with k=%o, |cyclic_module|=%o)\n", Cputime(t0), k, #cyclic_module; end if;
 
   //check that they are all 2-torsion points, only the identity is already 2-torsion
   //and that O_Q is all of the two torsion
@@ -157,16 +186,18 @@ intrinsic Mod2GaloisMapPQM(X::CrvHyp : prec:=30) -> Any
 
 
 
+  if timing_steps then printf "[Mod2GaloisMapPQM +%os cpu] Galois loop over |Gal|=%o (AbelJacobi per sigma) ...\n", Cputime(t0), #Gal; end if;
   map_init:=[];
   for sigma in Gal do
     //Qsigma is what we get when we act on Q by the Galois element sigma. It is still a two torsion point.
-    Qsigma := (P1)*(AbelJacobi(XR![Evaluate(map(sigma)(frootsM[k-1]),embC),0], XR`BasePoint) - AbelJacobi(XR![Evaluate(map(sigma)(x0),embC),0], XR`BasePoint));
+    Qsigma := (P1)*(AbelJacobi(XR![Evaluate(map(sigma)(frootsM[k-1]),embC),0], RS_BasePt) - AbelJacobi(XR![Evaluate(map(sigma)(x0),embC),0], RS_BasePt));
     cyclic_coefficients:=[ a : a in O_elts | IsCoercible(Latendo,Eltseq(RealVector(OtoM2C(a)*Q - Qsigma))) ];
     assert #cyclic_coefficients eq 1;
     //index:=Index(Omod2_eltsCC,cyclic_coefficients[1]);
     a_sigma := Omod2!cyclic_coefficients[1];
     Append(~map_init,<sigma,a_sigma>);
   end for;
+  if timing_steps then printf "[Mod2GaloisMapPQM +%os cpu] Galois loop done\n", Cputime(t0); end if;
   
   Omod2_elts := [ Omod2!elt : elt in O_elts ];
   enhancedmap:=map< Gal -> Omod2_elts | map_init >;
@@ -174,6 +205,7 @@ intrinsic Mod2GaloisMapPQM(X::CrvHyp : prec:=30) -> Any
   //enhancedmap:=map< Gal -> Omod2_elts | sigma :-> 
   //Omod2_elts[[ i : i in [1..#twotorsion_points] | IsCoercible(Latendo,Eltseq(RealVector(twotorsion_points[i] - 1/2*(P1)*AbelJacobi(XR![Evaluate(map(sigma)(frootsM[2]),embC),0])))) ][1]] >;
 
+  if timing_steps then printf "[Mod2GaloisMapPQM +%os cpu] finished Mod2GaloisMapPQM\n", Cputime(t0); end if;
   return Gal,map,enhancedmap,O;
  end intrinsic;
 
@@ -304,14 +336,18 @@ end intrinsic;
 
 
 
-intrinsic EnhancedRepresentationMod2PQM(X::CrvHyp : prec:=30,endo_prec := 500) -> Any 
+intrinsic EnhancedRepresentationMod2PQM(X::CrvHyp : prec:=30,endo_prec := 500, timing_steps:=false) -> Any 
   {return 1. the Galois group of the compositum of the two torsion field and the endomorphism field
           2. A map from the Galois group in S_n to automorphisms of the field
           3. the enhanced representation as a map from automorphisms of the field to elements of the enhanced semidirect product.
-          4. the endomorphism ring}
+          4. the endomorphism ring
+   Pass timing_steps:=true to print cumulative CPU checkpoints inside Mod2GaloisMapPQM and around EndomorphismRepresentationPQM.}
 
-  Galgrp2,Galmap2,mod2map,O1:=Mod2GaloisMapPQM(X : prec:=prec);
+  te := Cputime();
+  Galgrp2,Galmap2,mod2map,O1:=Mod2GaloisMapPQM(X : prec:=prec, timing_steps:=timing_steps);
+  if timing_steps then printf "[EnhancedRepresentationMod2PQM +%os cpu] Mod2GaloisMapPQM returned; starting EndomorphismRepresentationPQM ...\n", Cputime(te); end if;
   Galgrp_end,Galmap_end,rho_end:=EndomorphismRepresentationPQM(X : prec:=prec,endo_prec:=endo_prec, quaternionorder:=O1);
+  if timing_steps then printf "[EnhancedRepresentationMod2PQM +%os cpu] EndomorphismRepresentationPQM done\n", Cputime(te); end if;
 
  
   M:=Domain(Galmap2(Galgrp2.1));
@@ -331,6 +367,7 @@ intrinsic EnhancedRepresentationMod2PQM(X::CrvHyp : prec:=30,endo_prec := 500) -
   rho_enhanced:=map< Galgrp2 -> Oenh | sigma :-> Oenh!< restrict_rho_end(sigma), mod2map(sigma) >  >;
 
   assert MapIsHomomorphism(rho_enhanced : injective:=true);
+  if timing_steps then printf "[EnhancedRepresentationMod2PQM +%os cpu] finished (rho_enhanced built)\n", Cputime(te); end if;
   return Galgrp2, Galmap2, rho_enhanced, O1;
 end intrinsic;
   
