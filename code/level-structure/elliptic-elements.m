@@ -71,7 +71,7 @@ intrinsic NormalizerToAutmuO(Enh::AlgQuatEnh, a::AlgQuatElt) -> AlgQuatEnhElt
 
   assert a^2/Norm(a) in O;
   assert Norm(a) gt 0;
-  W:=[];
+  //W:=[];
   for w in Bxelts(Enh) do
     if IsSquare(Rationals()!Abs(Norm((w`element)^-1*a))) then
       tr,c:=IsSquare(Rationals()!Abs(Norm((w`element)^-1*a)));
@@ -80,12 +80,12 @@ intrinsic NormalizerToAutmuO(Enh::AlgQuatEnh, a::AlgQuatElt) -> AlgQuatEnhElt
       assert Norm(x) in {1,-1};
       ell := Enh!<w,O!x>;
       if Min([ i : i in [1..orda] | ell^i in ker]) eq orda then
-        Append(~W,ell);
-        //return ell;
+        //Append(~W,ell);
+        return ell;
       end if;
     end if;
   end for;
-  return W[1];
+  //return W[1];
 end intrinsic;
 
 intrinsic NormalizerPlusGenerators(Enh::AlgQuatEnh) -> SeqEnum

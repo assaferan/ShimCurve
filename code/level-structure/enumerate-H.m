@@ -6,6 +6,7 @@ declare attributes SubgroupLatElt:
   sigma,
   genus,
   H1plusquo,
+  i_at_level, // This lattice element may be stored modulo N, where N is a multiple of the level.  In this case, we want to remember which lattice element modulo the level corresponds to this one
   Enh;
 
 declare attributes SubgroupLat:
@@ -29,27 +30,6 @@ function getDeterminantImage(H, O, Ahom)
     gens := [H.i : i in [1..Ngens(H)]];
     ONparts := [GL4ToPair(h, O, Ahom)[2] : h in gens];
     return sub<GL(1, Integers(N)) | [[[Norm(x)]] : x in ONparts]>;
-end function;
-
-function getKernelOfReduction(OmodN, p, G)
-    N := Modulus(OmodN);
-    assert IsDivisibleBy(N, p);
-    if (p eq N) then
-        return G;
-    end if;
-    gens := [G.i : i in [1..Ngens(G)]];
-    R := Integers(N div p);
-    phom := hom<G -> GL(4, R) | [<g, ChangeRing(g, R)> : g in gens]>;
-    return Kernel(phom);
-end function;
-
-function getAllReductionKernels(OmodN, G)
-    N := Modulus(OmodN);
-    ker_reds := AssociativeArray();
-    for p in PrimeDivisors(N) do
-        ker_reds[p] := getKernelOfReduction(OmodN, p, G);
-    end for;
-    return ker_reds;
 end function;
 
 function aaa(L, key) // {key: L} in Python
@@ -291,7 +271,6 @@ GP_SHIM_RF := recformat< level : Integers(),
 			 mu_label,
 			 label,
 			 coarse_label,
-			 Glabel
 			 Glabel,
 			 nu2,
 			 nu3,

@@ -202,6 +202,15 @@ intrinsic GL4ToPair(x::GrpMatElt, O::AlgQuatOrd, Ahom::HomGrp) -> Tup
   end for;
 end intrinsic;
 
+intrinsic GL4ToAutmu(Enh::AlgQuatEnh) -> HomGrp
+{The projection homomorphism from the semidirect product within GL4 to Autmu(O)}
+    G := GL4sub(Enh);
+    O := Enh`quaternionorder;
+    Ahom := AtoGL4(Enh);
+    A := Domain(Ahom);
+    return hom<G -> A | [<G.i, GL4ToPair(G.i, O, Ahom)[1]> : i in [1..Ngens(G)]]>;
+end intrinsic;
+
 intrinsic UnitGroupToGL4(x::AlgQuatOrdResElt) -> GrpMatElt
   {O is an order over R, this returns a matrix [lambda_g] wrt to a basis
   which is the right regular representation
@@ -219,7 +228,7 @@ intrinsic UnitGroupToGL4modN(x::AlgQuatOrdElt,N::RngIntElt) -> GrpMatElt
   return GL(4,ZmodN)!UnitGroupToGL4(x);
 end intrinsic;
 
-intrinsic UnitGroupToGL4modN(x::AlgQuatOrdResElt,N::RngIntElt) -> GrpMatElt 
+intrinsic UnitGroupToGL4modN(x::AlgQuatOrdResElt,N::RngIntElt) -> GrpMatElt
   {O is an order over R, this returns a matrix [lambda_g] wrt to a basis
   which is the right regular representation
   lambda_g : g --> b*g where g \in GL_1(O)}
@@ -229,19 +238,22 @@ end intrinsic;
 
 
 
-intrinsic EnhancedSemidirectInGL4(Enh::AlgQuatEnh) -> Map 
-  {create the map from the semidirect product to GL4(R). R depends on the base 
+intrinsic EnhancedSemidirectInGL4(Enh::AlgQuatEnh) -> Map
+  {create the map from the semidirect product to GL4(R). R depends on the base
   ring of Enh.}
+  if Enh`N eq 1 then
+    return map<Enh -> AutmuO(Enh) | s :-> (s`element)[1]>; // TODO: Not sure if this is right
+  end if;
 
   O:=Enh`quaternionorder;
   R:=Enh`basering;
   GL4:=GL(4,R);
-  if Type(R) eq RngInt then 
-    mapfromenhancedimage := map<  Enh -> GL4  |  
+  if Type(R) eq RngInt then
+    mapfromenhancedimage := map<  Enh -> GL4  |
     s :-> NormalizingElementToGL4((s`element)[1], O)*UnitGroupToGL4((s`element)[2])  >;
-  else 
+  else
     N:=Modulus(R);
-    mapfromenhancedimage := map<  Enh -> GL4  |  
+    mapfromenhancedimage := map<  Enh -> GL4  |
     s :-> NormalizingElementToGL4modN((s`element)[1],O,N)*UnitGroupToGL4modN(((s`element)[2])`element,N)  >;
   end if;
 
@@ -259,8 +271,8 @@ intrinsic EnhancedElementInGL4(g::AlgQuatEnhElt) -> GrpMatElt
 end intrinsic;
 
 
-intrinsic EnhancedImagePermutation(AutmuO::Map,OmodN::AlgQuatOrdRes) -> Grp 
-  {AutmuO is a map from a finite group C -> B^x, which is isomorphic onto the image in B^x/Q^x. 
+intrinsic EnhancedImagePermutation(AutmuO::Map,OmodN::AlgQuatOrdRes) -> Grp
+  {AutmuO is a map from a finite group C -> B^x, which is isomorphic onto the image in B^x/Q^x.
   We create the semidirect product of ONx by AutmuO, using AutomorphismModN as the map
   theta: AutmuO -> Aut(ONx)}
 
@@ -337,6 +349,9 @@ intrinsic EnhancedImageGL4(Enh::AlgQuatEnh) -> GrpMat, GrpMat, HomGrp
   O:=Enh`quaternionorder;
   N:=Enh`N;
   A := AutmuO(Enh);
+  if N eq 1 then
+      return A, sub<A|>, IdentityHomomorphism(A);
+  end if;
   ZmodN:=ResidueClassRing(N);
   GL4 := GL(4, ZmodN);
   Angen := NumberOfGenerators(A);
