@@ -34,7 +34,7 @@ if tr then
   end if;
 
   // Enhanced embedding should respect multiplication.
-  Ocirc := EnhancedSemidirectProduct(O : N := 3);
+  Ocirc := EnhancedSemidirectProduct(O, mu : N := 3);
   x := Omod3!2;
   e := Omod3!1;
   g1 := Ocirc!<1, x>;

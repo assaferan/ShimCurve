@@ -56,7 +56,9 @@ intrinsic FromLowerLevel(Lat::SubgroupLat, Enh::AlgQuatEnh : naive:=false)
 {}
     N := Enh`N;
     ambord := #Enh`GL4sub;
-    ker_reds := getAllReductionKernels(Enh`rhs, ONx(Enh));
+    X := SemidirectSystem(Enh`quaternionorder, Enh`mu, [N]);
+    X`Enh[N] := Enh`rhs;
+    ker_reds := getGLReductionKernels(X, N);
     label_lower := {};
     for i in [1..#Lat] do
         H := Lat`subs[i];
@@ -156,8 +158,8 @@ intrinsic EnumerateGerbiestSurjectiveH(Enh::AlgQuatEnh) -> SeqEnum[Re] // OmodN:
   vprint User1: "DeterminantImages", Cputime() - t0; t0 := Cputime();
 
   phiN := EulerPhi(N);
-  surjH := [H[i] : i in [1..#subs] | detimages[i] eq phiN];
-  trivH := [H[i] : i in [1..#subs] | detimages[i] eq 1];
+  surjH := [subs[i] : i in [1..#subs] | detimages[i] eq phiN];
+  trivH := [subs[i] : i in [1..#subs] | detimages[i] eq 1];
 
   // FiniteGroup code prefers lower index earlier
   Reverse(~surjH); Reverse(~trivH);
@@ -346,6 +348,19 @@ function createRecord(H)
     assert s`genus eq 1 + area_term - elliptic_term;
 
     return s;
+end function;
+
+function Base26Encode(n)
+    strip := "abcdefghijklmnopqrstuvwxyz";
+    assert n gt 0;
+    x := n - 1;
+    s := "";
+    repeat
+        digit := x mod 26;
+        s cat:= strip[digit+1];
+        x div:= 26;
+    until x eq 0;
+    return Reverse(s);
 end function;
 
 procedure updateLabels(~subs, G)

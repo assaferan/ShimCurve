@@ -45,7 +45,8 @@ declare attributes AlgQuatEnh :
   G1plusmodKGmap, // the map from G1plus to the quotient
   EllipticElements,
   EllipticElementsGL4,
-  NormalizerPlusGenerators;
+  NormalizerPlusGenerators,
+  Lats;
 
 declare attributes AlgQuatEnhElt :
   element,
@@ -69,7 +70,7 @@ intrinsic OmodNElement(OmodN::AlgQuatOrdRes, x::AlgQuatOrdElt) -> AlgQuatOrdResE
   elt`element := x;
   elt`parent := OmodN;
 
-  return OmodN!elt;
+  return elt;
 end intrinsic;
 
 intrinsic ElementModuloScalars(BxmodFx::AlgQuatProj, x::AlgQuatElt) -> AlgQuatProjElt
