@@ -1,1 +1,1 @@
-declare verbose ShimuraCurves, 3;
+declare verbose ShimuraCurve, 3;

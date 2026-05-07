@@ -13,8 +13,7 @@ tr, mu := HasPolarizedElementOfDegree(O, del);
 TestAssert(tr, "Polarized element exists for regression case");
 
 if tr then
-  LatLookup := AssociativeArray();
-  calc := GenerateDataForGerbiestSurjectiveH(O, mu, Divisors(N), LatLookup);
+  calc := GenerateDataForGerbiestSurjectiveH(O, mu, Divisors(N));
   TestAssert(#calc gt 0, "GenerateDataForGerbiestSurjectiveH produced records");
 
   top := Minimum(#calc, 10);

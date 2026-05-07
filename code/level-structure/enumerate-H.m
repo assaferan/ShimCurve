@@ -52,7 +52,8 @@ function SortGClass(L)
     return ans;
 end function;
 
-procedure SetLevel(Lat, i, X, ker_reds, N, ambord, ~label_lower)
+procedure SetLevel(Lat, i, X, ker_reds, N, ambord, ~label_lower : lat_det := 0)
+    Lats := (lat_det eq 0) select X`Lat else X`Lat1;
     H := Lat`subs[i];
     Enh := X`Enh[N];
     H`Enh := Enh;
@@ -60,8 +61,8 @@ procedure SetLevel(Lat, i, X, ker_reds, N, ambord, ~label_lower)
     H`index := ambord div H`order;
     for p -> kerp in ker_reds do
         if kerp[1] subset H`subgroup then
-            if IsDefined(Enh`Lats, N div p) then
-                pLat := Enh`Lats[N div p];
+            if IsDefined(Lats, N div p) then
+                pLat := Lats[N div p];
                 // image of reduction
                 // Him := sub<pLat`Grp`MagmaGrp | Generators(H`subgroup)>;
                 Him := Transfer(X, N, p)(H`subgroup);
@@ -88,24 +89,25 @@ procedure SetLevel(Lat, i, X, ker_reds, N, ambord, ~label_lower)
     return;
 end procedure;
 
-intrinsic FromLowerLevel(Lat::SubgroupLat, X::AlgQuatEnhSys, N::RngIntElt : naive:=false)
+intrinsic FromLowerLevel(Lat::SubgroupLat, X::AlgQuatEnhSys, N::RngIntElt : naive:=false, lat_det := 0)
 {}
     ambord := #X`Enh[N]`GL4sub;
     ker_reds := getGLReductionKernels(X, N);
     label_lower := {};
     for i in [1..#Lat] do
-        SetLevel(Lat, i, X, ker_reds, N, ambord, ~label_lower);
+        vprint ShimuraCurve, 3: "i = ", i;
+        SetLevel(Lat, i, X, ker_reds, N, ambord, ~label_lower : lat_det := lat_det);
     end for;
     for lower in label_lower do
         // We need to deal with level 1 and 2 specially
-        ComputeLevelsLabels(Lat, X, lower : lower_first:=false, naive:=naive);
+        ComputeLevelsLabels(Lat, X, lower : lower_first:=false, naive:=naive, lat_det := lat_det);
     end for;
 end intrinsic;
 
-intrinsic ComputeLevelsLabels(Lat::SubgroupLat, X::AlgQuatEnhSys, N::RngIntElt : lower_first:=true, naive:=false)
+intrinsic ComputeLevelsLabels(Lat::SubgroupLat, X::AlgQuatEnhSys, N::RngIntElt : lower_first:=true, naive:=false, lat_det := 0)
 {}
     if lower_first then
-        FromLowerLevel(Lat, X, N : naive:=naive);
+        FromLowerLevel(Lat, X, N : naive:=naive, lat_det := lat_det);
     end if;
     this_level := [H : H in Lat`subs | H`level eq N];
     by_ig := IndexFibers(this_level, func<x|<x`level, x`index, x`genus>>);
@@ -161,11 +163,11 @@ intrinsic EnumerateGerbiestSurjectiveH(X::AlgQuatEnhSys, N::RngIntElt) -> SeqEnu
   // Compute the list of subgroups
   t0 := Cputime();
   subs := Subgroups(G, KG);
-  vprint User1: "MagmaSubgroups", Cputime() - t0;
+  vprint ShimuraCurve: "MagmaSubgroups", Cputime() - t0;
 
   t0 := Cputime();
   detimages := [#getDeterminantImage(H`subgroup, O, Ahom) : H in subs];
-  vprint User1: "DeterminantImages", Cputime() - t0; t0 := Cputime();
+  vprint ShimuraCurve: "DeterminantImages", Cputime() - t0; t0 := Cputime();
 
   phiN := EulerPhi(N);
   surjH := [subs[i] : i in [1..#subs] | detimages[i] eq phiN];
@@ -181,16 +183,16 @@ intrinsic EnumerateGerbiestSurjectiveH(X::AlgQuatEnhSys, N::RngIntElt) -> SeqEnu
   t0 := Cputime();
   // This needs to be sped up (lattice edges are hard); we turn it off for now.
   //ComputeLatticeEdges(Latfull, G, IdentityHomomorphism(G));
-  //vprint User1: "ComputeLatticeEdges", Cputime() - t0; t0 := Cputime();
+  //vprint ShimuraCurve: "ComputeLatticeEdges", Cputime() - t0; t0 := Cputime();
 
   // This requires the lattice edges, so we have to replace it with another, more naive labeling
   //ComputeLevelsLabels(Latfull, Enh);
-  //vprint User1: "ComputeLevelsLabels", Cputime() - t0; t0 := Cputime();
+  //vprint ShimuraCurve: "ComputeLevelsLabels", Cputime() - t0; t0 := Cputime();
 
-  ComputeLevelsLabels(Latfull, X, N : naive:=true);
-  vprint User1: "ComputeLevelsLabelsNaive", Cputime() - t0; t0 := Cputime();
-  ComputeLevelsLabels(Lat1, X, N : naive:=true);
-  vprint User1: "ComputeLevelsLabels1Naive", Cputime() - t0; t0 := Cputime();
+  ComputeLevelsLabels(Latfull, X, N : naive:=true, lat_det := 0);
+  vprint ShimuraCurve: "ComputeLevelsLabelsNaive", Cputime() - t0; t0 := Cputime();
+  ComputeLevelsLabels(Lat1, X, N : naive:=true, lat_det := 1);
+  vprint ShimuraCurve: "ComputeLevelsLabels1Naive", Cputime() - t0; t0 := Cputime();
 
   return Latfull, Lat1;
 end intrinsic;
@@ -407,7 +409,7 @@ procedure updateLabels(~subs, G)
     end for;
 end procedure;
 
-intrinsic GenerateDataForGerbiestSurjectiveH(O::AlgQuatOrd,mu::AlgQuatElt,Ns::SeqEnum[RngIntElt],LatLookup::Assoc) -> SeqEnum[Rec], Assoc
+intrinsic GenerateDataForGerbiestSurjectiveH(O::AlgQuatOrd,mu::AlgQuatElt,Ns::SeqEnum[RngIntElt]) -> SeqEnum[Rec], Assoc
 {Returns a list of records, each representing a line to be added to the database gps_shimura_test, together with an updated LatLookup.
 If N in Ns, then the every integer m dividing N should be in Ns}
 
@@ -421,9 +423,9 @@ If N in Ns, then the every integer m dividing N should be in Ns}
   records := [];
   X := SemidirectSystem(O, mu, Ns);
   for N in Ns do
+    print "N = ", N;
     if N le 2 then continue; end if;
     X`Enh[N] := EnhancedSemidirectProduct(O, mu : N:=N);
-    X`Enh[N]`Lats := LatLookup;
     Latfull, Lat1 := EnumerateGerbiestSurjectiveH(X, N);
     print "subs", N, #Latfull;
     Latlevels := {H`level : H in Latfull`subs};
@@ -434,7 +436,8 @@ If N in Ns, then the every integer m dividing N should be in Ns}
       // Usually just one, but sometimes also adds 1 and 2
       // !! TODO - is this the right thing, or should we just take the sublattice
       // corresponding to the new level M ???
-      LatLookup[M] := Latfull;
+      X`Lat[M] := Latfull;
+      X`Lat1[M] := Lat1;
     end for;
 
     // TODO: Need to fix handling of lower levels, especially with regard to subgroups of G1
@@ -442,7 +445,7 @@ If N in Ns, then the every integer m dividing N should be in Ns}
 
     t0 := Cputime();
     records cat:= [createRecord(H, X) : H in subs];
-    vprint User1: "createRecord", Cputime() - t0;
+    vprint ShimuraCurve: "createRecord", Cputime() - t0;
     seen join:= Latlevels;
   end for;
   return records;

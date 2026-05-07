@@ -250,7 +250,7 @@ end intrinsic;
 intrinsic SignatureTable(DBound::RngIntElt, NBound::RngIntElt) -> Any
     {Outputs signature table of the shimura curves X0(D;N)/<w_m> and for all Atkin-Lehner elements w_m, where m is a Hall divisor of N*D.}
 
-    filename := Sprintf("~/Desktop/ShimCurve/data/signature-tables/SignatureTableSingleALX0DN_%o_%o.txt", DBound, NBound);
+    filename := Sprintf("~/Desktop/ShimuraCurve/data/signature-tables/SignatureTableSingleALX0DN_%o_%o.txt", DBound, NBound);
     Write(filename, Sprint("Discriminant ? Level ? w_m ? Genus ? Elliptic Point Counts"));
     // we only want D square-free, with an even number of prime factors.
     for D in [D : D in [6..DBound] | MoebiusMu(D) eq 1] do

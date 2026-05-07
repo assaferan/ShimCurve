@@ -25,9 +25,8 @@ for deg in Divisors(D) do
   tr,mu := HasPolarizedElementOfDegree(O,deg);
   if not tr then continue; end if;
   Ns := [1,2,3,4,6];
-  LatLookup := AssociativeArray();
   print "deg = ", deg;
-  time subs := GenerateDataForGerbiestSurjectiveH(O,mu,Ns,LatLookup);
+  time subs := GenerateDataForGerbiestSurjectiveH(O,mu,Ns);
   WriteHeaderAndSubgroupsDataToFile(subs, O);
 end for;
 ```

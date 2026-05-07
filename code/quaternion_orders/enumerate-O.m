@@ -112,7 +112,7 @@ intrinsic EnumerateO(bound::RngIntElt : verbose:=true,write:=false) -> Any
   {loop over maximal orders of discriminant up to bound and output their lmfdb row entry}
   
   if write eq true then 
-    filename:=Sprintf("ShimCurve/data/quaternion-orders/quaternion-orders.m");
+    filename:=Sprintf("data/quaternion-orders/quaternion-orders.m");
     fprintf filename, "label ? i_square ? j_square ? discO ? discB ? gens_numerators ? gens_denominators\n";
     fprintf filename, "text ? integer ? integer ? integer ? integer ? integer[] ? integer[]\n";
     fprintf filename, "\n";
@@ -127,7 +127,7 @@ intrinsic EnumerateO(bound::RngIntElt : verbose:=true,write:=false) -> Any
         row;
       end if;
       if write eq true then 
-        filename:=Sprintf("ShimCurve/data/quaternion-orders/quaternion-orders.m");
+        filename:=Sprintf("data/quaternion-orders/quaternion-orders.m");
         fprintf filename, "%o\n",row;   
       end if;
     end if;
@@ -253,7 +253,7 @@ intrinsic EnumerateOmu(boundO::RngIntElt: verbose:=true,write:=false) -> Any
   and polarization up to boundmu and output their lmfdb row entry}
   
   if write eq true then 
-    filename:=Sprintf("ShimCurve/data/quaternion-orders/quaternion-orders-polarized.m");
+    filename:=Sprintf("ShimuraCurve/data/quaternion-orders/quaternion-orders-polarized.m");
     fprintf filename, "label ? order_label ? mu ? deg_mu ? nrd_mu ? AutmuO_size ? AutmuO_label ? AutmuO_is_cyclic ? AutmuO_generators ? Gerby_gen \n";
     fprintf filename, "text ? text ? integer[] ? integer ? integer ? integer ? text ? boolean ? integer[] ? integer[]\n";
     fprintf filename, "\n";
@@ -271,7 +271,7 @@ intrinsic EnumerateOmu(boundO::RngIntElt: verbose:=true,write:=false) -> Any
           printf "%o\n",row;
         end if;
         if write eq true then 
-          filename:=Sprintf("ShimCurve/data/quaternion-orders/quaternion-orders-polarized.m");
+          filename:=Sprintf("/data/quaternion-orders/quaternion-orders-polarized.m");
           fprintf filename, "%o\n",row;   
         end if;
       end for;

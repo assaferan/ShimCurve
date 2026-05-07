@@ -23,5 +23,5 @@ print "";
 printf "Test run complete: %o failure(s), %o skip(s)\n", TestFailureCount(), TestSkipCount();
 
 if TestFailureCount() gt 0 then
-  error Sprintf("ShimCurve tests failed with %o failure(s).", TestFailureCount());
+  error Sprintf("ShimuraCurve tests failed with %o failure(s).", TestFailureCount());
 end if;

@@ -4,7 +4,7 @@
 
 
 MakeGeneraTableOfGenus:= function(D,del,N : genus:=0, IsSplit:=true, torsion:=[ ])
-  filename:=Sprintf("ShimCurve/genera-tables/genera-D%o-deg%o-N%o.m",D,del,N);
+  filename:=Sprintf("genera-tables/genera-D%o-deg%o-N%o.m",D,del,N);
   r:=Open(filename,"r");
   if torsion eq [] then    
     possible_tors:=[  [2],[2,2],[3],[2,3],[4], [2,4], [2,2,2], [2,2,3],[3,4],[4,4], [2,2,4] ];

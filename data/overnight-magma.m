@@ -1,3 +1,3 @@
-AttachSpec("CHIMP/CHIMP.spec");
-AttachSpec("ShimCurve/spec");
+AttachSpec("../CHIMP/CHIMP.spec");
+AttachSpec("spec");
 EnumerateOmu(1000:write:=true);
