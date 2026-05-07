@@ -127,7 +127,7 @@ intrinsic ComputeLevelsLabels(Lat::SubgroupLat, X::AlgQuatEnhSys, N::RngIntElt :
             end if;
             for gnum in [1..#by_gnum] do
                 H := by_gnum[gnum];
-                H`shimura_label := Sprintf("%o.%o.%o.%o.%o", H`level, H`index, H`genus, CremonaCode(gcode), gnum);
+                H`shimura_label := <Sprintf("%o.%o.%o.%o.%o", H`level, H`index, H`genus, CremonaCode(gcode), gnum), gcode, gnum>;
             end for;
         end for;
     end for;
@@ -344,9 +344,12 @@ function createRecord(H, X)
     end if;
     s`deg_mu := Integers()!Norm(mu) div Discriminant(O);
     s`mu_label := Sprintf("%o.%o", s`order_label, s`deg_mu);
-    s`coarse_label := H`shimura_label;
+    s`coarse_label := H`shimura_label[1];
+    s`coarse_class := CremonaCode(H`shimura_label[2]);
+    s`coarse_num := H`shimura_label[3];
+    s`coarse_class_num := H`shimura_label[2];
     s`fine_label := s`coarse_label;
-    s`label := Sprintf("%o-%o-%o", s`order_label, s`mu_label, s`coarse_label);
+    s`label := Sprintf("%o.%o", s`mu_label, s`fine_label);
     s`is_coarse := true;
 
     nu := EnhancedEllipticPoints(H`sigma);
@@ -423,7 +426,7 @@ If N in Ns, then the every integer m dividing N should be in Ns}
   records := [];
   X := SemidirectSystem(O, mu, Ns);
   for N in Ns do
-    print "N = ", N;
+    print "N =", N;
     if N le 2 then continue; end if;
     X`Enh[N] := EnhancedSemidirectProduct(O, mu : N:=N);
     Latfull, Lat1 := EnumerateGerbiestSurjectiveH(X, N);
@@ -443,8 +446,8 @@ If N in Ns, then the every integer m dividing N should be in Ns}
     // Also need to set psl2label on the returned records
     t0 := Cputime();
     new_records :=  [createRecord(H, X) : H in subs];
+
     G := EnhancedImageGL4(X`Enh[N]);
-    updateLabels(~new_records, G);
     O1_subs := [H : H in Lat1`subs | H`level in new_levels];
     G1 := O1_subs[#O1_subs]`subgroup;
     // Only coarse intersections H meet G1 occur in psl2label matching; build one record per
@@ -456,12 +459,8 @@ If N in Ns, then the every integer m dividing N should be in Ns}
         Append(~meet_class_reps, M);
         end if;
     end for;
-    O1_needed := [ rec<SUBMEET_RF | subgroup := R, order := #R> : R in meet_class_reps ];
-    vprintf ShimuraCurves, 1 : "#O1 PSL2 reps (meet classes) %o (filtered O1_subs %o)\n",
-                    #O1_needed, #O1_subs;
 
-    ret_O1_subs := [createRecord(H, X) : H in O1_needed];
-    updateLabels(~ret_O1_subs, G);
+    ret_O1_subs := [createRecord(H, X) : H in O1_subs];
     
     for idx->H in new_records do
         H1 := H`subgroup meet G1;
