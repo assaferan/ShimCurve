@@ -65,6 +65,10 @@ procedure SetLevel(Lat, i, X, ker_reds, N, ambord, ~label_lower)
                 // image of reduction
                 // Him := sub<pLat`Grp`MagmaGrp | Generators(H`subgroup)>;
                 Him := Transfer(X, N, p)(H`subgroup);
+                ambient_N := Modulus(BaseRing(pLat`Grp`MagmaGrp));
+                if ambient_N ne N div p then
+                    Him := Him@@Transfer(X, ambient_N, ambient_N div (N div p));
+                end if;
                 Hi := SubgroupIdentify(pLat, Him);
                 HH := pLat`subs[Hi];
                 H`level := HH`level;

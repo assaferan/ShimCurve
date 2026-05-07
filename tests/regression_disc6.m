@@ -18,7 +18,7 @@ end if;
 seen := {};
 records := [];
 X := SemidirectSystem(O, mu, Ns);
-for N in Ns[1..4] do
+for N in Ns do
     if N le 2 then continue; end if;
     X`Enh[N] := EnhancedSemidirectProduct(O, mu : N:=N);
     X`Enh[N]`Lats := LatLookup;
@@ -43,10 +43,11 @@ for N in Ns[1..4] do
     vprint User1: "createRecord", Cputime() - t0;
     seen join:= Latlevels;
 end for;
+/*
 N := 6;
-Enh := EnhancedSemidirectProduct(O, mu : N:=N);
-Enh`Lats := LatLookup;
-N := Enh`N;
+X`Enh[N] := EnhancedSemidirectProduct(O, mu : N:=N);
+X`Enh[N]`Lats := LatLookup;
+Enh := X`Enh[N];
 OmodN := Enh`rhs;
 O := OmodN`quaternionorder;
 Ahom := AtoGL4(Enh);
@@ -91,12 +92,10 @@ Lat1`subs := [SubgroupLatElement(Lat1, trivH[i]`subgroup : i:=i, subgroup_count:
 
 Lat := Latfull;
 naive := true;
-N := Enh`N;
 ambord := #Enh`GL4sub;
-X := SemidirectSystem(Enh`quaternionorder, Enh`mu, [N]);
-X`Enh[N] := Enh;
 ker_reds := getGLReductionKernels(X, N);
 label_lower := {};
 for i in [1..#Lat] do
     SetLevel(Lat, i, X, ker_reds, N, ambord, ~label_lower);
 end for;
+*/
