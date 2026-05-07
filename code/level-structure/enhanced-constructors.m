@@ -62,7 +62,8 @@ declare attributes AlgQuatEnhSys :
   Enh, // Associative array; Enh[N] is an AlgQuatEnh object at level N
   Lat, // Associative array; Lat[N] is a SubgroupLat object containing subgroups at levels dividing N with surjective determinant
   Lat1, // Associative array; Lat1[N] is a SubgroupLat object containing subgroups at levels dividing N with determinant 1
-  Transfer; // Associative array; Transfer[<N,p>] is the reduction homomorphism from GL4sub(Enh[N]) to GL4sub(Enh[N/p])
+  Transfer, // Associative array; Transfer[<N,p>] is the reduction homomorphism from GL4sub(Enh[N]) to GL4sub(Enh[N/p])
+  TransferKernels; // Associative array; TransferKernels[N][p] is the list of kernels of the reuction homomorphisms modulo N/p^k
 
 intrinsic OmodNElement(OmodN::AlgQuatOrdRes, x::AlgQuatOrdElt) -> AlgQuatOrdResElt
   {Construct an element of the OmodN whose underlying element is x in O}
@@ -731,6 +732,7 @@ intrinsic SemidirectSystem(O::AlgQuatOrd, mu::AlgQuatElt, Ns_maximal::SeqEnum[Rn
     X`Lat := AssociativeArray();
     X`Lat1 := AssociativeArray();
     X`Transfer := AssociativeArray();
+    X`TransferKernels := AssociativeArray();
     return X;
 end intrinsic;
 
@@ -864,15 +866,17 @@ end intrinsic;
 
 intrinsic getGLReductionKernels(X::AlgQuatEnhSys, N::RngIntElt) -> Assoc
 {Return the prime-power kernels of reduction from level N to N/q}
-    ker_reds := AssociativeArray();
+  if not IsDefined(X`TransferKernels, N) then
+    X`TransferKernels[N] := AssociativeArray();
     for p in PrimeDivisors(N) do
         // !!! TODO - change this !!!
         // At the moment we are only using reduction modulo p, so we only populate 
         // a single kernel of reduction (modulo p)
         // ker_reds[p] := [Kernel(Transfer(X, N, p^k)) : k in [1..Valuation(N, p)]];
-        ker_reds[p] :=  [Kernel(Transfer(X, N, p))];
+        X`TransferKernels[N][p] := [Kernel(Transfer(X, N, p))];
     end for;
-    return ker_reds;
+  end if;
+  return X`TransferKernels[N];
 end intrinsic;
 
 intrinsic getSLReductionKernels(GLkers::Assoc, N::RngIntElt) -> Assoc

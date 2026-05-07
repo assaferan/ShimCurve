@@ -84,12 +84,9 @@ procedure SetLevel(Lat, i, X, ker_reds, N, ambord, ~label_lower)
     return;
 end procedure;
 
-intrinsic FromLowerLevel(Lat::SubgroupLat, Enh::AlgQuatEnh : naive:=false)
+intrinsic FromLowerLevel(Lat::SubgroupLat, X::AlgQuatEnhSys, N::RngIntElt : naive:=false)
 {}
-    N := Enh`N;
-    ambord := #Enh`GL4sub;
-    X := SemidirectSystem(Enh`quaternionorder, Enh`mu, [N]);
-    X`Enh[N] := Enh;
+    ambord := #X`Enh[N]`GL4sub;
     ker_reds := getGLReductionKernels(X, N);
     label_lower := {};
     for i in [1..#Lat] do
@@ -97,15 +94,14 @@ intrinsic FromLowerLevel(Lat::SubgroupLat, Enh::AlgQuatEnh : naive:=false)
     end for;
     for lower in label_lower do
         // We need to deal with level 1 and 2 specially
-        ComputeLevelsLabels(Lat, Enh : N:=lower, naive:=naive);
+        ComputeLevelsLabels(Lat, X, lower : lower_first:=false, naive:=naive);
     end for;
 end intrinsic;
 
-intrinsic ComputeLevelsLabels(Lat::SubgroupLat, Enh::AlgQuatEnh : N:=0, naive:=false)
+intrinsic ComputeLevelsLabels(Lat::SubgroupLat, X::AlgQuatEnhSys, N::RngIntElt : lower_first:=true, naive:=false)
 {}
-    if N eq 0 then
-        N := Enh`N;
-        FromLowerLevel(Lat, Enh : naive:=naive);
+    if lower_first then
+        FromLowerLevel(Lat, X, N : naive:=naive);
     end if;
     this_level := [H : H in Lat`subs | H`level eq N];
     by_ig := IndexFibers(this_level, func<x|<x`level, x`index, x`genus>>);
@@ -131,10 +127,10 @@ intrinsic ComputeLevelsLabels(Lat::SubgroupLat, Enh::AlgQuatEnh : N:=0, naive:=f
     end for;
 end intrinsic;
 
-intrinsic EnumerateGerbiestSurjectiveH(Enh::AlgQuatEnh) -> SeqEnum[Re] // OmodN::AlgQuatOrdRes, AutFull::Map, G::GrpMat, ONx::GrpMat, Ahom::HomGrp, KG::GrpMat) -> SeqEnum[Rec]
+intrinsic EnumerateGerbiestSurjectiveH(X::AlgQuatEnhSys, N::RngIntElt) -> SeqEnum[Re] // OmodN::AlgQuatOrdRes, AutFull::Map, G::GrpMat, ONx::GrpMat, Ahom::HomGrp, KG::GrpMat) -> SeqEnum[Rec]
 {return all of the enhanced subgroups which contain the entire kernel (maximal size of gerbe, hence gerbisest), and having surjective reduced norm, in a list with each one being a record (rethink it).}
 
-  N := Enh`N;
+  Enh := X`Enh[N];
   OmodN := Enh`rhs;
   O := OmodN`quaternionorder;
   Ahom := AtoGL4(Enh);
@@ -187,9 +183,9 @@ intrinsic EnumerateGerbiestSurjectiveH(Enh::AlgQuatEnh) -> SeqEnum[Re] // OmodN:
   //ComputeLevelsLabels(Latfull, Enh);
   //vprint User1: "ComputeLevelsLabels", Cputime() - t0; t0 := Cputime();
 
-  ComputeLevelsLabels(Latfull, Enh : naive:=true);
+  ComputeLevelsLabels(Latfull, X, N : naive:=true);
   vprint User1: "ComputeLevelsLabelsNaive", Cputime() - t0; t0 := Cputime();
-  ComputeLevelsLabels(Lat1, Enh : naive:=true);
+  ComputeLevelsLabels(Lat1, X, N : naive:=true);
   vprint User1: "ComputeLevelsLabels1Naive", Cputime() - t0; t0 := Cputime();
 
   return Latfull, Lat1;
@@ -297,7 +293,7 @@ GP_SHIM_RF := recformat< level : Integers(),
 // Minimal record shape for createRecord (needs subgroup + order only).
 SUBMEET_RF := recformat<subgroup : GrpMat, order : Integers()>;
 
-function createRecord(H)
+function createRecord(H, X)
     s := rec< GP_SHIM_RF | >;
     Hgp := H`subgroup;
     order := H`order;
@@ -309,7 +305,7 @@ function createRecord(H)
     KG := NormalizerKernelGL4(Enh);
     O := Enh`quaternionorder;
     AutFull := Aut(O,mu);
-
+    N := Modulus(BaseRing(Hgp));
     Henhgens := [GL4ToPair(Hgp.i, O, Ahom) : i in [1..Ngens(Hgp)]];
     aut_mu_norms := [Abs(SquarefreeFactorization(Integers()!Norm(homtoB(pair[1])`element))) : pair in Henhgens];
 
@@ -324,6 +320,7 @@ function createRecord(H)
     s`aut_gerbiness:=#{GL4ToPair(x, O, Ahom)[1] : x in KG};
     s`torsion:=PrimaryAbelianInvariants(FixedSubspace(Hgp));
     s`Glabel:=GroupLabel(Hgp); // TODO: this should maybe be   N eq level select GroupLabel(Hgp) else GroupLabel(Hgp / getKernelOfReduction(OmodN, N div level, G meet ONxinGL4));
+    s`Glabel:= N eq H`level select GroupLabel(Hgp) else GroupLabel(Hgp / getGLReductionKernels(X, N)[N div H`level][1]);
     s`galEnd:=GroupLabel(Domain(Ahom));
     s`autmuO_norms:=aut_mu_norms;
     s`is_split:=(order eq #(Hgp meet Image(Ahom)) * #(Hgp meet ONx(Enh)));
@@ -418,11 +415,12 @@ If N in Ns, then the every integer m dividing N should be in Ns}
   end if;
   seen := {};
   records := [];
+  X := SemidirectSystem(O, mu, Ns);
   for N in Ns do
     if N le 2 then continue; end if;
-    Enh := EnhancedSemidirectProduct(O, mu : N:=N);
-    Enh`Lats := LatLookup;
-    Latfull, Lat1 := EnumerateGerbiestSurjectiveH(Enh);
+    X`Enh[N] := EnhancedSemidirectProduct(O, mu : N:=N);
+    X`Enh[N]`Lats := LatLookup;
+    Latfull, Lat1 := EnumerateGerbiestSurjectiveH(X, N);
     print "subs", N, #Latfull;
     Latlevels := {H`level : H in Latfull`subs};
     new_levels := Latlevels diff seen;
@@ -439,7 +437,7 @@ If N in Ns, then the every integer m dividing N should be in Ns}
     // Also need to set psl2label on the returned records
 
     t0 := Cputime();
-    records cat:= [createRecord(H) : H in subs];
+    records cat:= [createRecord(H, X) : H in subs];
     vprint User1: "createRecord", Cputime() - t0;
     seen join:= Latlevels;
   end for;

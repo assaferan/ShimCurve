@@ -17,11 +17,12 @@ elif Ns eq [1] then
 end if;
 seen := {};
 records := [];
+X := SemidirectSystem(O, mu, Ns);
 for N in Ns[1..4] do
     if N le 2 then continue; end if;
-    Enh := EnhancedSemidirectProduct(O, mu : N:=N);
-    Enh`Lats := LatLookup;
-    Latfull, Lat1 := EnumerateGerbiestSurjectiveH(Enh);
+    X`Enh[N] := EnhancedSemidirectProduct(O, mu : N:=N);
+    X`Enh[N]`Lats := LatLookup;
+    Latfull, Lat1 := EnumerateGerbiestSurjectiveH(X,N);
     print "subs", N, #Latfull;
     Latlevels := {H`level : H in Latfull`subs};
     new_levels := Latlevels diff seen;
@@ -38,7 +39,7 @@ for N in Ns[1..4] do
     // Also need to set psl2label on the returned records
 
     t0 := Cputime();
-    records cat:= [createRecord(H) : H in subs];
+    records cat:= [createRecord(H, X) : H in subs];
     vprint User1: "createRecord", Cputime() - t0;
     seen join:= Latlevels;
 end for;
