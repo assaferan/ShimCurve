@@ -444,10 +444,13 @@ If N in Ns, then the every integer m dividing N should be in Ns}
     // Also need to set psl2label on the returned records
 
     t0 := Cputime();
-    records cat:= [createRecord(H, X) : H in subs];
+    new_records :=  [createRecord(H, X) : H in subs];
+    updateLabels(~new_records, EnhancedImageGL4(X`Enh[N]));
+    records cat:= new_records;
     vprint ShimuraCurve: "createRecord", Cputime() - t0;
     seen join:= Latlevels;
   end for;
+
   return records;
 end intrinsic;
 
