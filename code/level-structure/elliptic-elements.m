@@ -54,6 +54,37 @@ intrinsic NormalizerPlusGenerators(O::AlgQuatOrd) -> SeqEnum
   end if;
 end intrinsic;
 
+intrinsic SemidirectToNormalizerKernel(O::AlgQuatOrd,mu::AlgQuatOrdElt) -> SeqEnum 
+  {return the kernel of the map from the enhanced semidirect product to N_B^x(O). 
+  It is necessarily cyclic and the second value is the generator of the group}
+  B:=QuaternionAlgebra(O);
+  Ocirc:=EnhancedSemidirectProduct(O);
+  AutFull, autmuOseq := Aut(O,mu);
+  Oxcyc_cand:= [ (1/Integers()!Sqrt(Norm(a`element)))*a`element : a in autmuOseq | IsSquare(Norm(a`element)) ];
+  //ker:=[ Ocirc!<x,x^-1> : x in Oxcyc ];
+  Oxcyc := [x : x in Oxcyc_cand | x in O];
+  ker:=[ Ocirc!<x,x^-1> : x in Oxcyc];
+  assert #ker in [1,2,3];
+  assert Set([ Norm(e) eq 1 : e in Oxcyc ]) eq Set([true]);
+  if #ker eq 1 then 
+    assert ker[1] eq Ocirc!<B!1,O!1> or ker[1] eq Ocirc!<B!1,-O!1>;
+    return [ Ocirc!<B!1,O!1>,Ocirc!<B!1,-O!1> ],Ocirc!<B!1,-O!1>;
+  else 
+    gen:=[ e : e in ker | Order(e) eq 2*#ker ];
+    assert #gen eq 1;
+    gen:=gen[1];
+    newker:=[ gen^i : i in [1..Order(gen)] ];
+    assert #Set(newker) eq Order(gen);
+    //assert its cyclic in GL4
+    return newker,gen;
+  end if;
+end intrinsic;
+
+intrinsic SemidirectToNormalizerKernel(O::AlgQuatOrd,mu::AlgQuatElt) -> SeqEnum 
+  {return the kernel of the map form the enhanced semidirect product to N_B^x(O). 
+  It is necessarily cyclic and the second value is the generator of the group}
+  return SemidirectToNormalizerKernel(O,O!mu);
+end intrinsic;
 
 intrinsic NormalizerToAutmuO(Enh::AlgQuatEnh, a::AlgQuatElt) -> AlgQuatEnhElt
   {Lift an element a of the Normalizer of O to the enhanced semidirect product, which is well defined up to 

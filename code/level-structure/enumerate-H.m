@@ -52,38 +52,46 @@ function SortGClass(L)
     return ans;
 end function;
 
+procedure SetLevel(Lat, i, Enh, ker_reds, N, ambord, p, ~label_lower)
+    H := Lat`subs[i];
+    H`Enh := Enh;
+    H`level := N; // default; overridden below if from lower level
+    H`index := ambord div H`order;
+    for p -> kerp in ker_reds do
+        if kerp[1] subset H`subgroup then
+            if IsDefined(Enh`Lats, N div p) then
+                pLat := Enh`Lats[N div p];
+                // image of reduction
+                Him := sub<pLat`Grp`MagmaGrp | Generators(H`subgroup)>;
+                Hi := SubgroupIdentify(pLat, Him);
+                HH := pLat`subs[Hi];
+                H`level := HH`level;
+                H`shimura_label := HH`shimura_label;
+                break;
+            else
+                // TODO: Handle the shimura_level correctly
+                assert IsDivisibleBy(H`level, p);
+                // At the moment, no reason for N to be squarefree
+                // assert IsSquarefree(N); // Must compute prior level N separately
+                H`level := H`level div p;
+                Include(~label_lower, H`level);
+            end if;
+        end if;
+    end for;
+    H`genus := EnhancedGenus(RamificationData(H));
+    return;
+end procedure;
+
 intrinsic FromLowerLevel(Lat::SubgroupLat, Enh::AlgQuatEnh : naive:=false)
 {}
     N := Enh`N;
     ambord := #Enh`GL4sub;
     X := SemidirectSystem(Enh`quaternionorder, Enh`mu, [N]);
-    X`Enh[N] := Enh`rhs;
+    X`Enh[N] := Enh;
     ker_reds := getGLReductionKernels(X, N);
     label_lower := {};
     for i in [1..#Lat] do
-        H := Lat`subs[i];
-        H`Enh := Enh;
-        H`level := N; // default; overridden below if from lower level
-        H`index := ambord div H`order;
-        for p -> kerp in ker_reds do
-            if kerp subset H`subgroup then
-                if IsDefined(Enh`Lats, N div p) then
-                    pLat := Enh`Lats[N div p];
-                    Hi := SubgroupIdentify(pLat, H`subgroup);
-                    HH := pLat`subs[Hi];
-                    H`level := HH`level;
-                    H`shimura_label := HH`shimura_label;
-                    break;
-                else
-                    // TODO: Handle the shimura_level correctly
-                    assert IsDivisibleBy(H`level, p);
-                    assert IsSquarefree(N); // Must compute prior level N separately
-                    H`level := H`level div p;
-                    Include(~label_lower, H`level);
-                end if;
-            end if;
-        end for;
-        H`genus := EnhancedGenus(RamificationData(H));
+        SetLevel(Lat, i, Enh, ker_reds, N, ambord, p, ~label_lower);
     end for;
     for lower in label_lower do
         // We need to deal with level 1 and 2 specially
@@ -243,7 +251,7 @@ intrinsic RamificationData(H::SubgroupLatElt) -> SeqEnum[GrpPermElt]
     return H`sigma;
 end intrinsic;
 
-intrinsic RamificationData(H::GrpMag, Enh::AlgQuatEnh) -> SeqEnum[GrpPermElt]
+intrinsic RamificationData(H::GrpMat, Enh::AlgQuatEnh) -> SeqEnum[GrpPermElt]
 {return the genus of the Shimura curve corresponding to H.}
     return RamData(H, Enh);
 end intrinsic;
@@ -420,7 +428,9 @@ If N in Ns, then the every integer m dividing N should be in Ns}
     print "#filtered", N, #subs;
     for M in new_levels do
       // Usually just one, but sometimes also adds 1 and 2
-      LatLookup[M] := Lat;
+      // !! TODO - is this the right thing, or should we just take the sublattice
+      // corresponding to the new level M ???
+      LatLookup[M] := Latfull;
     end for;
 
     // TODO: Need to fix handling of lower levels, especially with regard to subgroups of G1

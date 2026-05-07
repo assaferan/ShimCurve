@@ -866,7 +866,11 @@ intrinsic getGLReductionKernels(X::AlgQuatEnhSys, N::RngIntElt) -> Assoc
 {Return the prime-power kernels of reduction from level N to N/q}
     ker_reds := AssociativeArray();
     for p in PrimeDivisors(N) do
-        ker_reds[p] := [Kernel(Transfer(X, N, p^k)) : k in [1..Valuation(N, p)]];
+        // !!! TODO - change this !!!
+        // At the moment we are only using reduction modulo p, so we only populate 
+        // a single kernel of reduction (modulo p)
+        // ker_reds[p] := [Kernel(Transfer(X, N, p^k)) : k in [1..Valuation(N, p)]];
+        ker_reds[p] :=  [Kernel(Transfer(X, N, p))];
     end for;
     return ker_reds;
 end intrinsic;

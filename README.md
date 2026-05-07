@@ -9,9 +9,9 @@ In analogy with the $H < \mathrm{GL}_2(\mathbb{Z}/N\mathbb{Z})$ for modular curv
 
 $G$ plays the role of $\mathrm{GL}_2(\mathbb{Z}/N\mathbb{Z})$, $(O/N)^\times$ is where the Galois representation lives if the surface has QM defined already and $\mathrm{Aut}_{\pm \mu}(O)$ is like refined Atkin-Lehner involutions. A **PQM surface** has its Galois representatin contained in $G$, this is called the enhanced representation, see section 3.5 of https://arxiv.org/abs/2308.15193 for more details.
 
-Make sure you are working one directory above this repository. To load the intrinsics do
+To load the intrinsics do
 ```
-AttachSpec("ShimCurve/spec");
+AttachSpec("spec");
 ```
 
 # Data for LMFDB
@@ -24,10 +24,11 @@ O := MaximalOrder(B);
 for deg in Divisors(D) do
   tr,mu := HasPolarizedElementOfDegree(O,deg);
   if not tr then continue; end if;
-  for N in [1,2,3,4,6] do
-    subs := GenerateDataForGerbiestSurjectiveH(O,mu,N);
-    WriteHeaderAndSubgroupsDataToFile(subs, O);
-  end for;
+  Ns := [1,2,3,4,6];
+  LatLookup := AssociativeArray();
+  print "deg = ", deg;
+  time subs := GenerateDataForGerbiestSurjectiveH(O,mu,Ns,LatLookup);
+  WriteHeaderAndSubgroupsDataToFile(subs, O);
 end for;
 ```
 timings:
