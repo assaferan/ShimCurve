@@ -93,6 +93,9 @@ intrinsic FromLowerLevel(Lat::SubgroupLat, X::AlgQuatEnhSys, N::RngIntElt : naiv
 {}
     ambord := #X`Enh[N]`GL4sub;
     ker_reds := getGLReductionKernels(X, N);
+    if lat_det eq 1 then
+        ker_reds := getSLReductionKernels(ker_reds, N);
+    end if;
     label_lower := {};
     for i in [1..#Lat] do
         vprint ShimuraCurves, 3: "i = ", i;
@@ -347,7 +350,7 @@ function createRecord(H, X)
     s`coarse_label := H`shimura_label[1];
     s`coarse_class := CremonaCode(H`shimura_label[2]);
     s`coarse_num := H`shimura_label[3];
-    s`coarse_class_num := H`shimura_label[2];
+    s`coarse_class_num := H`shimura_label[2] + 1;
     s`fine_label := s`coarse_label;
     s`label := Sprintf("%o.%o", s`mu_label, s`fine_label);
     s`is_coarse := true;
@@ -460,12 +463,22 @@ If N in Ns, then the every integer m dividing N should be in Ns}
         end if;
     end for;
 
-    ret_O1_subs := [createRecord(H, X) : H in O1_subs];
+    ret_O1_subs := AssociativeArray(new_levels);
+    for M in new_levels do
+        ret_O1_subs[M] := [];
+    end for;
+    for H in O1_subs do
+        Append(~ret_O1_subs[H`level], createRecord(H,X));
+    end for;
     
     for idx->H in new_records do
         H1 := H`subgroup meet G1;
-        assert exists(H_O1){H_O1 : H_O1 in ret_O1_subs | IsConjugate(G, H1, H_O1`subgroup)};
+        assert exists(H_O1){H_O1 : H_O1 in ret_O1_subs[H`level] | IsConjugate(G, H1, H_O1`subgroup)};
         new_records[idx]`psl2label := H_O1`label;
+        // checking we are doing the right thing at least once
+        if H`label eq "6.1.1.4.0.a.1" then
+            assert H_O1`label eq H`label;
+        end if;
         scalar_index := Index(H`subgroup, H1);
         // At the moment we are not sure how to label the scalar subgroup, leaving 1 in the end
         new_records[idx]`scalar_label := Sprintf("%o.%o.1", H`level, scalar_index);
@@ -484,7 +497,8 @@ function writeSeqEnum(seq)
 end function;
 
 function writeBoolean(b)
-    return b select "t" else "f";
+    // capitalized for easier regression testing
+    return b select "T" else "F";
 end function;
 
 function strJoin(char, strings)
@@ -594,7 +608,8 @@ end intrinsic;
 
 intrinsic WriteSubgroupsDataToFile(file::IO, subs::SeqEnum[Rec], O::AlgQuatOrd)
 {Write the list of subgroup records to a file, without the header}
-    for s in subs do
+    // sorting for consistency
+    for s in Sort(subs) do
       gens_readable:= [ writeSeqEnum(Eltseq(O!g[1]`element) cat Eltseq(O!g[2])) : g in s`generators ];
       perms_readable:=[ EncodePerm(p):  p in s`ram_data_elts];
 
@@ -703,7 +718,7 @@ end intrinsic;
 intrinsic WriteHeaderAndSubgroupsDataToFile(subs::SeqEnum[Rec], O::AlgQuatOrd)
 {Write the list of subgroup records to a file, together with the header.}
     assert #subs gt 0;
-    filename:=Sprintf("data/genera-tables/genera-D%o-deg%o-N%o.m",subs[1]`discO,subs[1]`deg_mu,subs[1]`level);
+    filename:=Sprintf("data/genera-tables/genera-D%o-deg%o.m",subs[1]`discO,subs[1]`deg_mu);
     file := Open(filename, "w");
     WriteHeaderToFile(file);
     WriteSubgroupsDataToFile(file, subs, O);
