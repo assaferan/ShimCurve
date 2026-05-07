@@ -253,7 +253,7 @@ intrinsic EnumerateOmu(boundO::RngIntElt: verbose:=true,write:=false) -> Any
   and polarization up to boundmu and output their lmfdb row entry}
   
   if write eq true then 
-    filename:=Sprintf("ShimuraCurve/data/quaternion-orders/quaternion-orders-polarized.m");
+    filename:=Sprintf("data/quaternion-orders/quaternion-orders-polarized.m");
     fprintf filename, "label ? order_label ? mu ? deg_mu ? nrd_mu ? AutmuO_size ? AutmuO_label ? AutmuO_is_cyclic ? AutmuO_generators ? Gerby_gen \n";
     fprintf filename, "text ? text ? integer[] ? integer ? integer ? integer ? text ? boolean ? integer[] ? integer[]\n";
     fprintf filename, "\n";

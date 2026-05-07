@@ -452,7 +452,7 @@ intrinsic G1plus(Enh::AlgQuatEnh) -> GrpMat
         assert #G/#G1plus eq 2;
     end if;
     Enh`G1plus := G1plus;
-    vprint ShimuraCurve: "G1plus", Cputime() - t0;
+    vprint ShimuraCurves: "G1plus", Cputime() - t0;
     return G1plus;
 end intrinsic;
 
@@ -498,7 +498,7 @@ intrinsic NormalizerKernelGL4(Enh::AlgQuatEnh) -> GrpMat
         if Enh`N gt 2 then
             assert #(Enh`NormalizerKernelGL4) eq #K;
         end if;
-        vprint ShimuraCurve: "NormalizerKernelGL4", Cputime() - t0;
+        vprint ShimuraCurves: "NormalizerKernelGL4", Cputime() - t0;
     end if;
     return Enh`NormalizerKernelGL4;
 end intrinsic;
@@ -564,7 +564,7 @@ intrinsic EllipticElementsGL4(Enh::AlgQuatEnh) -> SeqEnum
         //assert forall(u){ <u,v> : u,v in elliptic_elements_enhanced |
         //    EnhancedElementInGL4(u)*EnhancedElementInGL4(v) eq EnhancedElementInGL4(u*v) };
         Enh`EllipticElementsGL4 := [ EnhancedElementInGL4(e) : e in elliptic_elements_enhanced ];
-        vprint ShimuraCurve: "EllipticElementsGL4", Cputime() - t0;
+        vprint ShimuraCurves: "EllipticElementsGL4", Cputime() - t0;
     end if;
     return Enh`EllipticElementsGL4;
 end intrinsic;
@@ -751,7 +751,7 @@ intrinsic ComputeSubs(X::AlgQuatEnhSys, N::RngIntElt) -> SeqEnum
     // TODO: map to a permutation group instead of computing in G
     t0 := Cputime();
     subs := Subgroups(G);
-    vprint ShimuraCurve: "MagmaSubgroups", Cputime() - t0;
+    vprint ShimuraCurves: "MagmaSubgroups", Cputime() - t0;
     return subs;
 end intrinsic;
 
@@ -777,7 +777,7 @@ intrinsic ComputeLats(X::AlgQuatEnhSys, M::RngIntElt)
     KG := NormalizerKernelGL4(Enh);
     t0 := Cputime();
     detimages := [#getDeterminantImage(H`subgroup, O, Ahom) : H in subs];
-    vprint ShimuraCurve: "DeterminantImages", Cputime() - t0; t0 := Cputime();
+    vprint ShimuraCurves: "DeterminantImages", Cputime() - t0; t0 := Cputime();
 
     phiN := EulerPhi(N);
     surjH := [subs[i] : i in [1..#subs] | detimages[i] eq phiN];
@@ -788,7 +788,7 @@ intrinsic ComputeLats(X::AlgQuatEnhSys, M::RngIntElt)
     //print "Gerbysurj", #surj_gerby_H, #surjH;
     triv_gerby_H := [H : H in trivH | KG subset H`subgroup];
     //print "Gerbytriv", #triv_gerby_H, #surjH;
-    vprint ShimuraCurve: "Gerby", Cputime() - t0; t0 := Cputime();
+    vprint ShimuraCurves: "Gerby", Cputime() - t0; t0 := Cputime();
 
     ker_reds := getGLReductionKernels(X, N);
     surjLevel := [getLevel(H, ker_reds) : H in surj_gerby_H];

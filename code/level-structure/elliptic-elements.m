@@ -127,7 +127,7 @@ intrinsic NormalizerPlusGenerators(Enh::AlgQuatEnh) -> SeqEnum
         B := Enh`quaternionalgebra;
         Nplus := NormalizerPlusGenerators(O);
         gens := [ Enh!NormalizerToAutmuO(Enh, B!a) : a in Nplus ];
-        vprint ShimuraCurve: "NBOplusgens_enhanced", Cputime() - t0;
+        vprint ShimuraCurves: "NBOplusgens_enhanced", Cputime() - t0;
         Enh`NormalizerPlusGenerators := gens;
     end if;
     return Enh`NormalizerPlusGenerators;

@@ -381,7 +381,7 @@ intrinsic EnhancedImageGL4(Enh::AlgQuatEnh) -> GrpMat, GrpMat, HomGrp
 
   semidirGL4 := sub<GL4 | ONxgens cat AinGL4>;
 
-  vprint ShimuraCurve: "EnhancedImageGL4", Cputime() - t0;
+  vprint ShimuraCurves: "EnhancedImageGL4", Cputime() - t0;
   return semidirGL4, ONx, Ahom;
 
   /*

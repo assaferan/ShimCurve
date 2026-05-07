@@ -1,5 +1,5 @@
 AttachSpec("spec");
-SetVerbose("ShimuraCurve", 1);
+SetVerbose("ShimuraCurves", 1);
 
 D := 6;
 B := QuaternionAlgebra(D);

@@ -95,7 +95,7 @@ intrinsic FromLowerLevel(Lat::SubgroupLat, X::AlgQuatEnhSys, N::RngIntElt : naiv
     ker_reds := getGLReductionKernels(X, N);
     label_lower := {};
     for i in [1..#Lat] do
-        vprint ShimuraCurve, 3: "i = ", i;
+        vprint ShimuraCurves, 3: "i = ", i;
         SetLevel(Lat, i, X, ker_reds, N, ambord, ~label_lower : lat_det := lat_det);
     end for;
     for lower in label_lower do
@@ -163,11 +163,11 @@ intrinsic EnumerateGerbiestSurjectiveH(X::AlgQuatEnhSys, N::RngIntElt) -> SeqEnu
   // Compute the list of subgroups
   t0 := Cputime();
   subs := Subgroups(G, KG);
-  vprint ShimuraCurve: "MagmaSubgroups", Cputime() - t0;
+  vprint ShimuraCurves: "MagmaSubgroups", Cputime() - t0;
 
   t0 := Cputime();
   detimages := [#getDeterminantImage(H`subgroup, O, Ahom) : H in subs];
-  vprint ShimuraCurve: "DeterminantImages", Cputime() - t0; t0 := Cputime();
+  vprint ShimuraCurves: "DeterminantImages", Cputime() - t0; t0 := Cputime();
 
   phiN := EulerPhi(N);
   surjH := [subs[i] : i in [1..#subs] | detimages[i] eq phiN];
@@ -183,16 +183,16 @@ intrinsic EnumerateGerbiestSurjectiveH(X::AlgQuatEnhSys, N::RngIntElt) -> SeqEnu
   t0 := Cputime();
   // This needs to be sped up (lattice edges are hard); we turn it off for now.
   //ComputeLatticeEdges(Latfull, G, IdentityHomomorphism(G));
-  //vprint ShimuraCurve: "ComputeLatticeEdges", Cputime() - t0; t0 := Cputime();
+  //vprint ShimuraCurves: "ComputeLatticeEdges", Cputime() - t0; t0 := Cputime();
 
   // This requires the lattice edges, so we have to replace it with another, more naive labeling
   //ComputeLevelsLabels(Latfull, Enh);
-  //vprint ShimuraCurve: "ComputeLevelsLabels", Cputime() - t0; t0 := Cputime();
+  //vprint ShimuraCurves: "ComputeLevelsLabels", Cputime() - t0; t0 := Cputime();
 
   ComputeLevelsLabels(Latfull, X, N : naive:=true, lat_det := 0);
-  vprint ShimuraCurve: "ComputeLevelsLabelsNaive", Cputime() - t0; t0 := Cputime();
+  vprint ShimuraCurves: "ComputeLevelsLabelsNaive", Cputime() - t0; t0 := Cputime();
   ComputeLevelsLabels(Lat1, X, N : naive:=true, lat_det := 1);
-  vprint ShimuraCurve: "ComputeLevelsLabels1Naive", Cputime() - t0; t0 := Cputime();
+  vprint ShimuraCurves: "ComputeLevelsLabels1Naive", Cputime() - t0; t0 := Cputime();
 
   return Latfull, Lat1;
 end intrinsic;
@@ -439,15 +439,41 @@ If N in Ns, then the every integer m dividing N should be in Ns}
       X`Lat[M] := Latfull;
       X`Lat1[M] := Lat1;
     end for;
-
     // TODO: Need to fix handling of lower levels, especially with regard to subgroups of G1
     // Also need to set psl2label on the returned records
-
     t0 := Cputime();
     new_records :=  [createRecord(H, X) : H in subs];
-    updateLabels(~new_records, EnhancedImageGL4(X`Enh[N]));
+    G := EnhancedImageGL4(X`Enh[N]);
+    updateLabels(~new_records, G);
+    O1_subs := [H : H in Lat1`subs | H`level in new_levels];
+    G1 := O1_subs[#O1_subs]`subgroup;
+    // Only coarse intersections H meet G1 occur in psl2label matching; build one record per
+    // G-conjugacy class of such intersections (instead of every det-trivial subgroup of G).
+    meet_subgroups := [ H`subgroup meet G1 : H in subs ];
+    meet_class_reps := [];
+    for M in meet_subgroups do
+        if not exists(R){ R : R in meet_class_reps | IsConjugate(G, M, R) } then
+        Append(~meet_class_reps, M);
+        end if;
+    end for;
+    O1_needed := [ rec<SUBMEET_RF | subgroup := R, order := #R> : R in meet_class_reps ];
+    vprintf ShimuraCurves, 1 : "#O1 PSL2 reps (meet classes) %o (filtered O1_subs %o)\n",
+                    #O1_needed, #O1_subs;
+
+    ret_O1_subs := [createRecord(H, X) : H in O1_needed];
+    updateLabels(~ret_O1_subs, G);
+    
+    for idx->H in new_records do
+        H1 := H`subgroup meet G1;
+        assert exists(H_O1){H_O1 : H_O1 in ret_O1_subs | IsConjugate(G, H1, H_O1`subgroup)};
+        new_records[idx]`psl2label := H_O1`label;
+        scalar_index := Index(H`subgroup, H1);
+        // At the moment we are not sure how to label the scalar subgroup, leaving 1 in the end
+        new_records[idx]`scalar_label := Sprintf("%o.%o.1", H`level, scalar_index);
+    end for;
+
     records cat:= new_records;
-    vprint ShimuraCurve: "createRecord", Cputime() - t0;
+    vprint ShimuraCurves: "createRecord", Cputime() - t0;
     seen join:= Latlevels;
   end for;
 

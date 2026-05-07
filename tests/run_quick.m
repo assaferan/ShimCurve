@@ -18,5 +18,5 @@ print "";
 printf "Quick test run complete: %o failure(s), %o skip(s)\n", TestFailureCount(), TestSkipCount();
 
 if TestFailureCount() gt 0 then
-  error Sprintf("ShimuraCurve quick tests failed with %o failure(s).", TestFailureCount());
+  error Sprintf("ShimuCurve quick tests failed with %o failure(s).", TestFailureCount());
 end if;
