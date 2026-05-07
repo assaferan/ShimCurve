@@ -1,5 +1,5 @@
 
-
+// WARNING: This file has not been updated to account for code refactoring
  
 //t:=27; //smaller image
 t:=19; //image has size 48, enhanced rep is a hom!

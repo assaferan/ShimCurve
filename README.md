@@ -9,9 +9,9 @@ In analogy with the $H < \mathrm{GL}_2(\mathbb{Z}/N\mathbb{Z})$ for modular curv
 
 $G$ plays the role of $\mathrm{GL}_2(\mathbb{Z}/N\mathbb{Z})$, $(O/N)^\times$ is where the Galois representation lives if the surface has QM defined already and $\mathrm{Aut}_{\pm \mu}(O)$ is like refined Atkin-Lehner involutions. A **PQM surface** has its Galois representatin contained in $G$, this is called the enhanced representation, see section 3.5 of https://arxiv.org/abs/2308.15193 for more details.
 
-Make sure you are working one directory above this repository. To load the intrinsics do
+To load the intrinsics do
 ```
-AttachSpec("ShimCurve/spec");
+AttachSpec("spec");
 ```
 
 # Data for LMFDB
@@ -24,10 +24,10 @@ O := MaximalOrder(B);
 for deg in Divisors(D) do
   tr,mu := HasPolarizedElementOfDegree(O,deg);
   if not tr then continue; end if;
-  for N in [1,2,3,4,6] do
-    subs := GenerateDataForGerbiestSurjectiveH(O,mu,N);
-    WriteHeaderAndSubgroupsDataToFile(subs, O);
-  end for;
+  Ns := [1,2,3,4,6];
+  print "deg = ", deg;
+  time subs := GenerateDataForGerbiestSurjectiveH(O,mu,Ns);
+  WriteHeaderAndSubgroupsDataToFile(subs, O);
 end for;
 ```
 timings:
@@ -79,7 +79,7 @@ Since it is not straightforward to work with $G$ directly in MAGMA, new 'types' 
 - AlgQuatProjElt :: an element of AlgQuatProj :: ElementModuloScalars(BxmodFx::AlgQuatProj, x::AlgQuatElt)
 - AlgOrdRes :: O/N :: quo(O::AlgQuatOrd, N::RngIntElt)
 - AlgOrdResElt :: an element of AlgOrdRes :: OmodNElement(OmodN::AlgQuatOrdRes, x::AlgQuatOrdElt)
-- AlgQuatEnh :: the semidirect product G, allows for N=0 :: EnhancedSemidirectProduct(O::AlgQuatOrd: N:=0)
+- AlgQuatEnh :: the semidirect product G, allows for N=0 :: EnhancedSemidirectProduct(O::AlgQuatOrd: N:=0) // TODO: mu
 - AlgQuatEnhElt :: an element of G :: EnhancedElement(Ocirc::AlgQuatEnh, tup::<>)
 ```
 
@@ -94,7 +94,7 @@ w^2;
 18
 w^2 eq BxmodQx!1;
 true 18
-Genh:=EnhancedSemidirectProduct(O: N:=3);
+Genh:=EnhancedSemidirectProduct(O: N:=3); // TODO: mu
 x:=OmodN!2;
 Genh!<w,x>
 ;
@@ -141,20 +141,20 @@ intrinsic EnhancedElementRecord(elt::AlgQuatEnhElt) -> Any
   {given <w,x> in Autmu(O) \rtimes (O/N)^x or Autmu(O) \rtimes O^x  return <w,x> as a 
   record along with its embedding in GL_4xGL_4 and just GL_4}
 
-intrinsic EnhancedImageGL4(AutmuO::Map, OmodN::AlgQuatOrdRes) -> GrpMat
-  {return the image of the enhanced semidirect product group G in GL4(Z/NZ). The second return value 
+intrinsic EnhancedImageGL4(Enh::AlgQuatEnh) -> GrpMat, GrpMat, GrpHom
+  {return the image of the enhanced semidirect product group G in GL4(Z/NZ).
 
-intrinsic NormalizerPlusGenerators(O::AlgQuatOrd) -> SeqEnum 
+intrinsic NormalizerPlusGenerators(O::AlgQuatOrd) -> SeqEnum
   {return generators of the positive norm elements which normalize O}
 
-intrinsic SemidirectToNormalizerKernel(O::AlgQuatOrd,mu::AlgQuatOrdElt) -> SeqEnum 
+intrinsic NormalizerKernel(O::AlgQuatOrd,mu::AlgQuatOrdElt) -> SeqEnum // TODO: Enh
   {return the kernel of the map form the enhanced semidirect product to N_B^x(O). 
   It is necessarily cyclic and the second value is the generator of the group}
 
-intrinsic NormalizerPlusGeneratorsEnhanced(O::AlgQuatOrd,mu::AlgQuatOrdElt) -> Tup 
+intrinsic NormalizerPlusGenerators(Enh::AlgQuatEnh) -> SeqEnum
   {return generators of the positive norm elements which normalize O in the enhanced semidirect product}
 
-intrinsic EnhancedRamificationData(H::GrpMat, G::GrpMat,O::AlgQuatOrd,mu::AlgQuatElt) -> Any
+intrinsic EnhancedRamificationData(H::GrpMat, G::GrpMat,O::AlgQuatOrd,mu::AlgQuatElt) -> Any // TODO: Enh
   {return the image of the elliptic elements under the monodromy map}
 
 intrinsic EnhancedGenus(sigma::SeqEnum) -> RngIntElt
@@ -175,7 +175,7 @@ B<i,j,k>:=QuaternionAlgebra< Rationals() | 3,-1 >;
 O:=QuaternionOrder([ 1, 1/2 + 1/2*i + 1/2*j + 1/2*k, 1/2 - 1/2*i + 1/2*j - 1/2*k, 1/2 - 1/2*i - 1/2*j + 1/2*k\
  ]);
 N:=4;
-Ocirc:=EnhancedSemidirectProduct(O : N:=4);
+Ocirc:=EnhancedSemidirectProduct(O : N:=4); // TODO: mu
  
 tr,mu:=HasPolarizedElementOfDegree(O,1);
 mu;
@@ -194,7 +194,7 @@ Mapping from: GrpPC to Quotient by scalars of Quaternion Algebra with base ring 
  
 Hgens:=[ Ocirc!< 1, [ 1, 0, 2, 0 ] >, Ocirc!< 1, [ 3, 1, 0, 1 ] >, Ocirc!< 1, [ 1, 2, 2, 0 ] >, Ocirc!< 1, [ \
 3, 0, 3, 3 ] >, Ocirc!< 1, [ 3, 2, 3, 1 ] >, Ocirc!< 1, [ 3, 0, 0, 0 ] >, Ocirc!< -3*j + k, [ 2, 0, 1, 0 ] > ];
-HgensGL4:=[ EnhancedElementInGL4modN(g,N) : g in Hgens ];
+HgensGL4:=[ EnhancedElementInGL4(g) : g in Hgens ];
 HGL4:=sub< GL(4,ResidueClassRing(N)) | HgensGL4 >;
  
 EnhancedElementRecord(Hgens[2]);
@@ -223,8 +223,8 @@ $.1 = 2*$.2 + 2*$.4
 Relations:
 2*$.1 = 0
 
-G:=EnhancedImageGL4(AutmuO,O,N);
-elliptic:=EnhancedEllipticElements(O,mu);
+G:=EnhancedImageGL4(AutmuO,O,N); // TODO: Enh
+elliptic:=EllipticElements(O,mu); // TODO: Enh
 elliptic; 
 [
 <-3*j + k, [1 0 0 0]>,
@@ -232,7 +232,7 @@ elliptic;
 <-2*i, [-1  0  0  1]>
 ]
  
-mon:=EnhancedRamificationData(HGL4,G,O,mu);
+mon:=EnhancedRamificationData(HGL4,G,O,mu); // TODO: Enh
 mon;
 [
 (1, 2)(3, 4),

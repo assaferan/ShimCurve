@@ -40,3 +40,7 @@ code
       }
   verbose.m
   }
+FiniteGroups/Code
+  {
+    +spec
+  }

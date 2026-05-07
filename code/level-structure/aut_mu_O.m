@@ -9,6 +9,7 @@ end function;
 intrinsic Aut(O::AlgQuatOrd,mu::AlgQuatElt) -> Map
   {return Autmu(O), as a map from D_n or C_n to BxmodQx (which is not a group in Magma)}
 
+  t0 := Cputime();
   assert IsScalar(mu^2);
   tr,eta:=IsScalar(mu^2);
   disc:=Discriminant(O);
@@ -64,6 +65,7 @@ intrinsic Aut(O::AlgQuatOrd,mu::AlgQuatElt) -> Map
 
   image := [e[2] : e in elts];
   assert MapIsHomomorphism(grp_map : injective:=true);
+  vprint ShimuraCurves, 3: "Aut_mu(O)", Cputime() - t0;
   return grp_map, image;
 end intrinsic;
 

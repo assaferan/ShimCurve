@@ -1,6 +1,6 @@
 load "tests/test_helpers.m";
 
-procedure CleanupGeneraFixture(fn::MonStgElt);
+procedure CleanupGeneraFixture(fn)
   System(Sprintf("rm -f %o", fn));
 end procedure;
 
