@@ -52,7 +52,7 @@ function SortGClass(L)
     return ans;
 end function;
 
-procedure SetLevel(Lat, i, Enh, ker_reds, N, ambord, p, ~label_lower)
+procedure SetLevel(Lat, i, Enh, ker_reds, N, ambord, ~label_lower)
     H := Lat`subs[i];
     H`Enh := Enh;
     H`level := N; // default; overridden below if from lower level
@@ -91,7 +91,7 @@ intrinsic FromLowerLevel(Lat::SubgroupLat, Enh::AlgQuatEnh : naive:=false)
     ker_reds := getGLReductionKernels(X, N);
     label_lower := {};
     for i in [1..#Lat] do
-        SetLevel(Lat, i, Enh, ker_reds, N, ambord, p, ~label_lower);
+        SetLevel(Lat, i, Enh, ker_reds, N, ambord, ~label_lower);
     end for;
     for lower in label_lower do
         // We need to deal with level 1 and 2 specially
