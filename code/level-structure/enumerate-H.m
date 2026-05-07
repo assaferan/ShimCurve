@@ -330,8 +330,8 @@ function createRecord(H, X)
     s`galEnd:=GroupLabel(Domain(Ahom));
     s`autmuO_norms:=aut_mu_norms;
     s`is_split:=(order eq #(Hgp meet Image(Ahom)) * #(Hgp meet ONx(Enh)));
-    s`generators:=[<homtoB(g[1]),g[2]> : g in Henhgens]; // TODO: this should maybe be   N eq level select [<AutFull(g[1]),g[2]> : g in Henhgens] else [<AutFull(g[1]),[Integers()!x mod level : x in Eltseq(g[2])]> : g in Henhgens];
-    // TODO: maybe need    s`generators:= [g : g in Set(s`generators)];
+    s`generators:=[<homtoB(g[1]),[Integers()!x mod H`level : x in Eltseq(g[2])]> : g in Henhgens]; // TODO: this should maybe be   N eq level select [<AutFull(g[1]),g[2]> : g in Henhgens] else [<AutFull(g[1]),[Integers()!x mod level : x in Eltseq(g[2])]> : g in Henhgens];
+    s`generators:= [g : g in Set(s`generators)];
     s`ram_data_elts:=H`sigma;
     s`discO := Discriminant(O);
     s`discB := Discriminant(Algebra(O));
