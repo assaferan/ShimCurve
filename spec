@@ -1,5 +1,12 @@
 code
   {
+  jacobian_decomp
+      {
+      helpers.m
+      level_dividing_D.m
+      indefinite.m
+      newform_decomp.m
+      }
   X0DN
       {
       X0DN_code.m

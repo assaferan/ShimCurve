@@ -1,3 +1,5 @@
 *.sig
 *.magma-scan
 *~
+cmfdata.txt
+.DS_Store

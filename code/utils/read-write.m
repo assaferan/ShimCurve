@@ -1,5 +1,5 @@
 
-intrinsic Read(line::MonStgElt) -> Rec
+intrinsic LineToRecord(line::MonStgElt) -> Rec
   {turn the line of data into a record}
 
   split:=Split(line,"?");
@@ -56,7 +56,7 @@ intrinsic GeneraTableToRecords(D::RngIntElt,del::RngIntElt,N::RngIntElt : genus:
     //end if;
 
     if "<" in line and "QuaternionAlgebra" notin line then 
-      s:=Read(line);
+      s:=LineToRecord(line);
       if (s`genus eq genus or genus eq -1) 
         and (s`fuchsindex eq fuchsindex or fuchsindex eq -1)
          and (torsioninvariants eq [-1] or torsioninvariants eq s`torsioninvariants)  
