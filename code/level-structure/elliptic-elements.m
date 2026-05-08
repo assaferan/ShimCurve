@@ -58,7 +58,7 @@ intrinsic SemidirectToNormalizerKernel(O::AlgQuatOrd,mu::AlgQuatOrdElt) -> SeqEn
   {return the kernel of the map from the enhanced semidirect product to N_B^x(O). 
   It is necessarily cyclic and the second value is the generator of the group}
   B:=QuaternionAlgebra(O);
-  Ocirc:=EnhancedSemidirectProduct(O);
+  Ocirc:=EnhancedSemidirectProduct(O, Algebra(O)!mu);
   AutFull, autmuOseq := Aut(O,mu);
   Oxcyc_cand:= [ (1/Integers()!Sqrt(Norm(a`element)))*a`element : a in autmuOseq | IsSquare(Norm(a`element)) ];
   //ker:=[ Ocirc!<x,x^-1> : x in Oxcyc ];
@@ -126,8 +126,9 @@ intrinsic NormalizerPlusGenerators(Enh::AlgQuatEnh) -> SeqEnum
         O := Enh`quaternionorder;
         B := Enh`quaternionalgebra;
         Nplus := NormalizerPlusGenerators(O);
-        gens := [ Enh!NormalizerToAutmuO(Enh, B!a) : a in Nplus ];
-        vprint User1: "NBOplusgens_enhanced", Cputime() - t0;
+        ker,kergen:=SemidirectToNormalizerKernel(O,Enh`mu);
+        gens := [ Enh!NormalizerToAutmuO(Enh, B!a) : a in Nplus ] cat [Enh!kergen];
+        vprint ShimuraCurves: "NBOplusgens_enhanced", Cputime() - t0;
         Enh`NormalizerPlusGenerators := gens;
     end if;
     return Enh`NormalizerPlusGenerators;

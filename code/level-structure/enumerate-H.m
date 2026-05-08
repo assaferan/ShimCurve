@@ -52,17 +52,24 @@ function SortGClass(L)
     return ans;
 end function;
 
-procedure SetLevel(Lat, i, Enh, ker_reds, N, ambord, p, ~label_lower)
+procedure SetLevel(Lat, i, X, ker_reds, N, ambord, ~label_lower : lat_det := 0)
+    Lats := (lat_det eq 0) select X`Lat else X`Lat1;
     H := Lat`subs[i];
+    Enh := X`Enh[N];
     H`Enh := Enh;
     H`level := N; // default; overridden below if from lower level
     H`index := ambord div H`order;
     for p -> kerp in ker_reds do
         if kerp[1] subset H`subgroup then
-            if IsDefined(Enh`Lats, N div p) then
-                pLat := Enh`Lats[N div p];
+            if IsDefined(Lats, N div p) then
+                pLat := Lats[N div p];
                 // image of reduction
-                Him := sub<pLat`Grp`MagmaGrp | Generators(H`subgroup)>;
+                // Him := sub<pLat`Grp`MagmaGrp | Generators(H`subgroup)>;
+                Him := Transfer(X, N, p)(H`subgroup);
+                ambient_N := Modulus(BaseRing(pLat`Grp`MagmaGrp));
+                if ambient_N ne N div p then
+                    Him := Him@@Transfer(X, ambient_N, ambient_N div (N div p));
+                end if;
                 Hi := SubgroupIdentify(pLat, Him);
                 HH := pLat`subs[Hi];
                 H`level := HH`level;
@@ -81,28 +88,28 @@ procedure SetLevel(Lat, i, Enh, ker_reds, N, ambord, p, ~label_lower)
     H`genus := EnhancedGenus(RamificationData(H));
 end procedure;
 
-intrinsic FromLowerLevel(Lat::SubgroupLat, Enh::AlgQuatEnh : naive:=false)
+intrinsic FromLowerLevel(Lat::SubgroupLat, X::AlgQuatEnhSys, N::RngIntElt : naive:=false, lat_det := 0)
 {}
-    N := Enh`N;
-    ambord := #Enh`GL4sub;
-    X := SemidirectSystem(Enh`quaternionorder, Enh`mu, [N]);
-    X`Enh[N] := Enh;
+    ambord := #X`Enh[N]`GL4sub;
     ker_reds := getGLReductionKernels(X, N);
+    if lat_det eq 1 then
+        ker_reds := getSLReductionKernels(ker_reds, N);
+    end if;
     label_lower := {};
     for i in [1..#Lat] do
-        SetLevel(Lat, i, Enh, ker_reds, N, ambord, p, ~label_lower);
+        vprint ShimuraCurves, 3: "i = ", i;
+        SetLevel(Lat, i, X, ker_reds, N, ambord, ~label_lower : lat_det := lat_det);
     end for;
     for lower in label_lower do
         // We need to deal with level 1 and 2 specially
-        ComputeLevelsLabels(Lat, Enh : N:=lower, naive:=naive);
+        ComputeLevelsLabels(Lat, X, lower : lower_first:=false, naive:=naive, lat_det := lat_det);
     end for;
 end intrinsic;
 
-intrinsic ComputeLevelsLabels(Lat::SubgroupLat, Enh::AlgQuatEnh : N:=0, naive:=false)
+intrinsic ComputeLevelsLabels(Lat::SubgroupLat, X::AlgQuatEnhSys, N::RngIntElt : lower_first:=true, naive:=false, lat_det := 0)
 {}
-    if N eq 0 then
-        N := Enh`N;
-        FromLowerLevel(Lat, Enh : naive:=naive);
+    if lower_first then
+        FromLowerLevel(Lat, X, N : naive:=naive, lat_det := lat_det);
     end if;
     this_level := [H : H in Lat`subs | H`level eq N];
     by_ig := IndexFibers(this_level, func<x|<x`level, x`index, x`genus>>);
@@ -122,16 +129,16 @@ intrinsic ComputeLevelsLabels(Lat::SubgroupLat, Enh::AlgQuatEnh : N:=0, naive:=f
             end if;
             for gnum in [1..#by_gnum] do
                 H := by_gnum[gnum];
-                H`shimura_label := Sprintf("%o.%o.%o.%o.%o", H`level, H`index, H`genus, CremonaCode(gcode), gnum);
+                H`shimura_label := <Sprintf("%o.%o.%o.%o.%o", H`level, H`index, H`genus, CremonaCode(gcode), gnum), gcode, gnum>;
             end for;
         end for;
     end for;
 end intrinsic;
 
-intrinsic EnumerateGerbiestSurjectiveH(Enh::AlgQuatEnh) -> SeqEnum[Re] // OmodN::AlgQuatOrdRes, AutFull::Map, G::GrpMat, ONx::GrpMat, Ahom::HomGrp, KG::GrpMat) -> SeqEnum[Rec]
+intrinsic EnumerateGerbiestSurjectiveH(X::AlgQuatEnhSys, N::RngIntElt) -> SeqEnum[Re] // OmodN::AlgQuatOrdRes, AutFull::Map, G::GrpMat, ONx::GrpMat, Ahom::HomGrp, KG::GrpMat) -> SeqEnum[Rec]
 {return all of the enhanced subgroups which contain the entire kernel (maximal size of gerbe, hence gerbisest), and having surjective reduced norm, in a list with each one being a record (rethink it).}
 
-  N := Enh`N;
+  Enh := X`Enh[N];
   OmodN := Enh`rhs;
   O := OmodN`quaternionorder;
   Ahom := AtoGL4(Enh);
@@ -158,11 +165,11 @@ intrinsic EnumerateGerbiestSurjectiveH(Enh::AlgQuatEnh) -> SeqEnum[Re] // OmodN:
   // Compute the list of subgroups
   t0 := Cputime();
   subs := Subgroups(G, KG);
-  vprint User1: "MagmaSubgroups", Cputime() - t0;
+  vprint ShimuraCurves: "MagmaSubgroups", Cputime() - t0;
 
   t0 := Cputime();
   detimages := [#getDeterminantImage(H`subgroup, O, Ahom) : H in subs];
-  vprint User1: "DeterminantImages", Cputime() - t0; t0 := Cputime();
+  vprint ShimuraCurves: "DeterminantImages", Cputime() - t0; t0 := Cputime();
 
   phiN := EulerPhi(N);
   surjH := [subs[i] : i in [1..#subs] | detimages[i] eq phiN];
@@ -178,16 +185,16 @@ intrinsic EnumerateGerbiestSurjectiveH(Enh::AlgQuatEnh) -> SeqEnum[Re] // OmodN:
   t0 := Cputime();
   // This needs to be sped up (lattice edges are hard); we turn it off for now.
   //ComputeLatticeEdges(Latfull, G, IdentityHomomorphism(G));
-  //vprint User1: "ComputeLatticeEdges", Cputime() - t0; t0 := Cputime();
+  //vprint ShimuraCurves: "ComputeLatticeEdges", Cputime() - t0; t0 := Cputime();
 
   // This requires the lattice edges, so we have to replace it with another, more naive labeling
   //ComputeLevelsLabels(Latfull, Enh);
-  //vprint User1: "ComputeLevelsLabels", Cputime() - t0; t0 := Cputime();
+  //vprint ShimuraCurves: "ComputeLevelsLabels", Cputime() - t0; t0 := Cputime();
 
-  ComputeLevelsLabels(Latfull, Enh : naive:=true);
-  vprint User1: "ComputeLevelsLabelsNaive", Cputime() - t0; t0 := Cputime();
-  ComputeLevelsLabels(Lat1, Enh : naive:=true);
-  vprint User1: "ComputeLevelsLabels1Naive", Cputime() - t0; t0 := Cputime();
+  ComputeLevelsLabels(Latfull, X, N : naive:=true, lat_det := 0);
+  vprint ShimuraCurves: "ComputeLevelsLabelsNaive", Cputime() - t0; t0 := Cputime();
+  ComputeLevelsLabels(Lat1, X, N : naive:=true, lat_det := 1);
+  vprint ShimuraCurves: "ComputeLevelsLabels1Naive", Cputime() - t0; t0 := Cputime();
 
   return Latfull, Lat1;
 end intrinsic;
@@ -294,7 +301,7 @@ GP_SHIM_RF := recformat< level : Integers(),
 // Minimal record shape for createRecord (needs subgroup + order only).
 SUBMEET_RF := recformat<subgroup : GrpMat, order : Integers()>;
 
-function createRecord(H)
+function createRecord(H, X)
     s := rec< GP_SHIM_RF | >;
     Hgp := H`subgroup;
     order := H`order;
@@ -306,7 +313,7 @@ function createRecord(H)
     KG := NormalizerKernelGL4(Enh);
     O := Enh`quaternionorder;
     AutFull := Aut(O,mu);
-
+    N := Modulus(BaseRing(Hgp));
     Henhgens := [GL4ToPair(Hgp.i, O, Ahom) : i in [1..Ngens(Hgp)]];
     aut_mu_norms := [Abs(SquarefreeFactorization(Integers()!Norm(homtoB(pair[1])`element))) : pair in Henhgens];
 
@@ -321,11 +328,12 @@ function createRecord(H)
     s`aut_gerbiness:=#{GL4ToPair(x, O, Ahom)[1] : x in KG};
     s`torsion:=PrimaryAbelianInvariants(FixedSubspace(Hgp));
     s`Glabel:=GroupLabel(Hgp); // TODO: this should maybe be   N eq level select GroupLabel(Hgp) else GroupLabel(Hgp / getKernelOfReduction(OmodN, N div level, G meet ONxinGL4));
+    s`Glabel:= N eq H`level select GroupLabel(Hgp) else GroupLabel(Hgp / getGLReductionKernels(X, N)[N div H`level][1]);
     s`galEnd:=GroupLabel(Domain(Ahom));
     s`autmuO_norms:=aut_mu_norms;
     s`is_split:=(order eq #(Hgp meet Image(Ahom)) * #(Hgp meet ONx(Enh)));
-    s`generators:=[<homtoB(g[1]),g[2]> : g in Henhgens]; // TODO: this should maybe be   N eq level select [<AutFull(g[1]),g[2]> : g in Henhgens] else [<AutFull(g[1]),[Integers()!x mod level : x in Eltseq(g[2])]> : g in Henhgens];
-    // TODO: maybe need    s`generators:= [g : g in Set(s`generators)];
+    s`generators:=[<homtoB(g[1]),[Integers()!x mod H`level : x in Eltseq(g[2])]> : g in Henhgens]; // TODO: this should maybe be   N eq level select [<AutFull(g[1]),g[2]> : g in Henhgens] else [<AutFull(g[1]),[Integers()!x mod level : x in Eltseq(g[2])]> : g in Henhgens];
+    s`generators:= [g : g in Set(s`generators)];
     s`ram_data_elts:=H`sigma;
     s`discO := Discriminant(O);
     s`discB := Discriminant(Algebra(O));
@@ -338,9 +346,12 @@ function createRecord(H)
     end if;
     s`deg_mu := Integers()!Norm(mu) div Discriminant(O);
     s`mu_label := Sprintf("%o.%o", s`order_label, s`deg_mu);
-    s`coarse_label := H`shimura_label;
+    s`coarse_label := H`shimura_label[1];
+    s`coarse_class := CremonaCode(H`shimura_label[2]);
+    s`coarse_num := H`shimura_label[3];
+    s`coarse_class_num := H`shimura_label[2] + 1;
     s`fine_label := s`coarse_label;
-    s`label := Sprintf("%o-%o-%o", s`order_label, s`mu_label, s`coarse_label);
+    s`label := Sprintf("%o.%o", s`mu_label, s`fine_label);
     s`is_coarse := true;
 
     nu := EnhancedEllipticPoints(H`sigma);
@@ -403,7 +414,7 @@ procedure updateLabels(~subs, G)
     end for;
 end procedure;
 
-intrinsic GenerateDataForGerbiestSurjectiveH(O::AlgQuatOrd,mu::AlgQuatElt,Ns::SeqEnum[RngIntElt],LatLookup::Assoc) -> SeqEnum[Rec], Assoc
+intrinsic GenerateDataForGerbiestSurjectiveH(O::AlgQuatOrd,mu::AlgQuatElt,Ns::SeqEnum[RngIntElt]) -> SeqEnum[Rec], Assoc
 {Returns a list of records, each representing a line to be added to the database gps_shimura_test, together with an updated LatLookup.
 If N in Ns, then the every integer m dividing N should be in Ns}
 
@@ -415,11 +426,12 @@ If N in Ns, then the every integer m dividing N should be in Ns}
   end if;
   seen := {};
   records := [];
+  X := SemidirectSystem(O, mu, Ns);
   for N in Ns do
+    print "N =", N;
     if N le 2 then continue; end if;
-    Enh := EnhancedSemidirectProduct(O, mu : N:=N);
-    Enh`Lats := LatLookup;
-    Latfull, Lat1 := EnumerateGerbiestSurjectiveH(Enh);
+    X`Enh[N] := EnhancedSemidirectProduct(O, mu : N:=N);
+    Latfull, Lat1 := EnumerateGerbiestSurjectiveH(X, N);
     print "subs", N, #Latfull;
     Latlevels := {H`level : H in Latfull`subs};
     new_levels := Latlevels diff seen;
@@ -429,17 +441,53 @@ If N in Ns, then the every integer m dividing N should be in Ns}
       // Usually just one, but sometimes also adds 1 and 2
       // !! TODO - is this the right thing, or should we just take the sublattice
       // corresponding to the new level M ???
-      LatLookup[M] := Latfull;
+      X`Lat[M] := Latfull;
+      X`Lat1[M] := Lat1;
     end for;
-
     // TODO: Need to fix handling of lower levels, especially with regard to subgroups of G1
     // Also need to set psl2label on the returned records
-
     t0 := Cputime();
-    records cat:= [createRecord(H) : H in subs];
-    vprint User1: "createRecord", Cputime() - t0;
+    new_records :=  [createRecord(H, X) : H in subs];
+
+    G := EnhancedImageGL4(X`Enh[N]);
+    O1_subs := [H : H in Lat1`subs | H`level in new_levels];
+    G1 := O1_subs[#O1_subs]`subgroup;
+    // Only coarse intersections H meet G1 occur in psl2label matching; build one record per
+    // G-conjugacy class of such intersections (instead of every det-trivial subgroup of G).
+    meet_subgroups := [ H`subgroup meet G1 : H in subs ];
+    meet_class_reps := [];
+    for M in meet_subgroups do
+        if not exists(R){ R : R in meet_class_reps | IsConjugate(G, M, R) } then
+        Append(~meet_class_reps, M);
+        end if;
+    end for;
+
+    ret_O1_subs := AssociativeArray(new_levels);
+    for M in new_levels do
+        ret_O1_subs[M] := [];
+    end for;
+    for H in O1_subs do
+        Append(~ret_O1_subs[H`level], createRecord(H,X));
+    end for;
+    
+    for idx->H in new_records do
+        H1 := H`subgroup meet G1;
+        assert exists(H_O1){H_O1 : H_O1 in ret_O1_subs[H`level] | IsConjugate(G, H1, H_O1`subgroup)};
+        new_records[idx]`psl2label := H_O1`label;
+        // checking we are doing the right thing at least once
+        if H`label eq "6.1.1.4.0.a.1" then
+            assert H_O1`label eq H`label;
+        end if;
+        scalar_index := Index(H`subgroup, H1);
+        // At the moment we are not sure how to label the scalar subgroup, leaving 1 in the end
+        new_records[idx]`scalar_label := Sprintf("%o.%o.1", H`level, scalar_index);
+    end for;
+
+    records cat:= new_records;
+    vprint ShimuraCurves: "createRecord", Cputime() - t0;
     seen join:= Latlevels;
   end for;
+
   return records;
 end intrinsic;
 
@@ -448,7 +496,8 @@ function writeSeqEnum(seq)
 end function;
 
 function writeBoolean(b)
-    return b select "t" else "f";
+    // capitalized for easier regression testing
+    return b select "T" else "F";
 end function;
 
 function strJoin(char, strings)
@@ -558,7 +607,8 @@ end intrinsic;
 
 intrinsic WriteSubgroupsDataToFile(file::IO, subs::SeqEnum[Rec], O::AlgQuatOrd)
 {Write the list of subgroup records to a file, without the header}
-    for s in subs do
+    // sorting for consistency
+    for s in Sort(subs) do
       gens_readable:= [ writeSeqEnum(Eltseq(O!g[1]`element) cat Eltseq(O!g[2])) : g in s`generators ];
       perms_readable:=[ EncodePerm(p):  p in s`ram_data_elts];
 
@@ -667,7 +717,7 @@ end intrinsic;
 intrinsic WriteHeaderAndSubgroupsDataToFile(subs::SeqEnum[Rec], O::AlgQuatOrd)
 {Write the list of subgroup records to a file, together with the header.}
     assert #subs gt 0;
-    filename:=Sprintf("data/genera-tables/genera-D%o-deg%o-N%o.m",subs[1]`discO,subs[1]`deg_mu,subs[1]`level);
+    filename:=Sprintf("data/genera-tables/genera-D%o-deg%o.m",subs[1]`discO,subs[1]`deg_mu);
     file := Open(filename, "w");
     WriteHeaderToFile(file);
     WriteSubgroupsDataToFile(file, subs, O);

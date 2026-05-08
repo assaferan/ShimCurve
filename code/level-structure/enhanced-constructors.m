@@ -45,8 +45,7 @@ declare attributes AlgQuatEnh :
   G1plusmodKGmap, // the map from G1plus to the quotient
   EllipticElements,
   EllipticElementsGL4,
-  NormalizerPlusGenerators,
-  Lats;
+  NormalizerPlusGenerators;
 
 declare attributes AlgQuatEnhElt :
   element,
@@ -63,7 +62,8 @@ declare attributes AlgQuatEnhSys :
   to_perm, // Associative array; to_perm[N] is an isomorphism from GL4sub(Enh[N]) to a permutation group
   Lat, // Associative array; Lat[N] is a SubgroupLat object containing permutation subgroups at levels dividing N with surjective determinant
   Lat1, // Associative array; Lat1[N] is a SubgroupLat object containing permutation subgroups at levels dividing N with determinant 1
-  Transfer; // Associative array; Transfer[<N,p>] is the reduction homomorphism from to_perm(GL4sub(Enh[N])) to to_perm(GL4sub(Enh[N/p]))
+  Transfer, // Associative array; Transfer[<N,m>] is the reduction homomorphism from to_perm(GL4sub(Enh[N])) to to_perm(GL4sub(Enh[m]))
+  TransferKernels; // Associative array; TransferKernels[N][p] is the list of kernels of the reduction homomorphisms modulo N/p^k
 
 intrinsic OmodNElement(OmodN::AlgQuatOrdRes, x::AlgQuatOrdElt) -> AlgQuatOrdResElt
   {Construct an element of the OmodN whose underlying element is x in O}
@@ -453,7 +453,7 @@ intrinsic G1plus(Enh::AlgQuatEnh) -> GrpMat
         assert #G/#G1plus eq 2;
     end if;
     Enh`G1plus := G1plus;
-    vprint User1: "G1plus", Cputime() - t0;
+    vprint ShimuraCurves: "G1plus", Cputime() - t0;
     return G1plus;
 end intrinsic;
 
@@ -499,7 +499,7 @@ intrinsic NormalizerKernelGL4(Enh::AlgQuatEnh) -> GrpMat
         if Enh`N gt 2 then
             assert #(Enh`NormalizerKernelGL4) eq #K;
         end if;
-        vprint User1: "NormalizerKernelGL4", Cputime() - t0;
+        vprint ShimuraCurves: "NormalizerKernelGL4", Cputime() - t0;
     end if;
     return Enh`NormalizerKernelGL4;
 end intrinsic;
@@ -565,7 +565,7 @@ intrinsic EllipticElementsGL4(Enh::AlgQuatEnh) -> SeqEnum
         //assert forall(u){ <u,v> : u,v in elliptic_elements_enhanced |
         //    EnhancedElementInGL4(u)*EnhancedElementInGL4(v) eq EnhancedElementInGL4(u*v) };
         Enh`EllipticElementsGL4 := [ EnhancedElementInGL4(e) : e in elliptic_elements_enhanced ];
-        vprint User1: "EllipticElementsGL4", Cputime() - t0;
+        vprint ShimuraCurves: "EllipticElementsGL4", Cputime() - t0;
     end if;
     return Enh`EllipticElementsGL4;
 end intrinsic;
@@ -733,6 +733,7 @@ intrinsic SemidirectSystem(O::AlgQuatOrd, mu::AlgQuatElt, Ns_maximal::SeqEnum[Rn
     X`Lat := AssociativeArray();
     X`Lat1 := AssociativeArray();
     X`Transfer := AssociativeArray();
+    X`TransferKernels := AssociativeArray();
     return X;
 end intrinsic;
 
@@ -765,7 +766,7 @@ intrinsic ComputeSubs(X::AlgQuatEnhSys, N::RngIntElt) -> SeqEnum
 
     t0 := Cputime();
     subs := Subgroups(Gperm, KGperm);
-    vprint User1: "MagmaSubgroups", Cputime() - t0;
+    vprint ShimuraCurves: "MagmaSubgroups", Cputime() - t0;
     return subs, phi;
 end intrinsic;
 
@@ -792,7 +793,7 @@ intrinsic ComputeLats(X::AlgQuatEnhSys, N::RngIntElt)
     KG := NormalizerKernelGL4(Enh);
     t0 := Cputime();
     detimages := [#getDeterminantImage((H`subgroup) @@ phi, O, Ahom) : H in subs];
-    vprint User1: "DeterminantImages", Cputime() - t0; t0 := Cputime();
+    vprint ShimuraCurves: "DeterminantImages", Cputime() - t0; t0 := Cputime();
 
     phiN := EulerPhi(N);
     surjH := [subs[i] : i in [1..#subs] | detimages[i] eq phiN];
@@ -949,14 +950,19 @@ end intrinsic;
 
 intrinsic getGLReductionKernels(X::AlgQuatEnhSys, N::RngIntElt) -> Assoc
 {Return the prime-power kernels of reduction from level N to N/q}
-    ker_reds := AssociativeArray();
+  if not IsDefined(X`TransferKernels, N) then
+    X`TransferKernels[N] := AssociativeArray();
     for p in PrimeDivisors(N) do
-        ker_reds[p] := [Kernel(Transfer(X, N, N div p^k)) : k in [1..Valuation(N, p)]];
+        X`TransferKernels[N][p] := [Kernel(Transfer(X, N, N div p^k)) : k in [1..Valuation(N, p)]];
     end for;
-    return ker_reds;
+  end if;
+  return X`TransferKernels[N];
 end intrinsic;
 
 intrinsic getSLReductionKernels(X::AlgQuatEnhSys, N::RngIntElt, GLkers::Assoc) -> Assoc
+// This is not the function we want!!!!
+// What we want is the intersection with Aut_mu(O) semidirect product (O/NO)^1
+// (i.e. where the restriction to the second factor is of norm 1)
 {Intersects with SL(4, Zmod(N))}
     SLkers := AssociativeArray();
     phiN := PermHom(X, N);

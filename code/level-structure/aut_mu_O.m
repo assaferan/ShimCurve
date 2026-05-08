@@ -65,7 +65,7 @@ intrinsic Aut(O::AlgQuatOrd,mu::AlgQuatElt) -> Map
 
   image := [e[2] : e in elts];
   assert MapIsHomomorphism(grp_map : injective:=true);
-  vprint User1: "Aut_mu(O)", Cputime() - t0;
+  vprint ShimuraCurves, 3: "Aut_mu(O)", Cputime() - t0;
   return grp_map, image;
 end intrinsic;
 
