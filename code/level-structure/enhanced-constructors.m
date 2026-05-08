@@ -964,9 +964,13 @@ intrinsic getSLReductionKernels(X::AlgQuatEnhSys, N::RngIntElt, GLkers::Assoc) -
 // What we want is the intersection with Aut_mu(O) semidirect product (O/NO)^1
 // (i.e. where the restriction to the second factor is of norm 1)
 {Intersects with SL(4, Zmod(N))}
+    R := Integers(N);
+    G := GL(4, R);
+    Enh := X`Enh[N];
+    G1 := sub<G | SL(4, R), Image(AtoGL4(Enh))>;
+    G1 := (G1 meet Domain(phiN)) @ phiN;
     SLkers := AssociativeArray();
     phiN := PermHom(X, N);
-    G1 := (SL(4, Integers(N)) meet Domain(phiN)) @ phiN;
     for p in PrimeDivisors(N) do
         SLkers[p] := [H meet G1 : H in GLkers[p]];
     end for;
