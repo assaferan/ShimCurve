@@ -878,6 +878,9 @@ intrinsic getGLReductionKernels(X::AlgQuatEnhSys, N::RngIntElt) -> Assoc
   return X`TransferKernels[N];
 end intrinsic;
 
+// This is not the function we want!!!!
+// What we want is the intersection with Aut_mu(O) semidirect product (O/NO)^1
+// (i.e. where the restriction to the second factor is of norm 1)
 intrinsic getSLReductionKernels(GLkers::Assoc, N::RngIntElt) -> Assoc
 {Intersects with SL(4, Zmod(N))}
     SLkers := AssociativeArray();
