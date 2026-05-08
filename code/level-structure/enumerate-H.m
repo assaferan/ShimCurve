@@ -52,13 +52,13 @@ function SortGClass(L)
     return ans;
 end function;
 
-procedure SetLevel(Lat, i, X, ker_reds, N, ambord, ~label_lower : lat_det := 0)
+procedure SetLevel(Lat, i, X, ker_reds, N, ~label_lower : lat_det := 0)
     Lats := (lat_det eq 0) select X`Lat else X`Lat1;
     H := Lat`subs[i];
     Enh := X`Enh[N];
     H`Enh := Enh;
     H`level := N; // default; overridden below if from lower level
-    H`index := ambord div H`order;
+    H`index := Lat`Grp`order div H`order;
     for p -> kerp in ker_reds do
         if kerp[1] subset H`subgroup then
             if IsDefined(Lats, N div p) then
@@ -91,15 +91,11 @@ end procedure;
 
 intrinsic FromLowerLevel(Lat::SubgroupLat, X::AlgQuatEnhSys, N::RngIntElt : naive:=false, lat_det := 0)
 {}
-    ambord := #X`Enh[N]`GL4sub;
-    ker_reds := getGLReductionKernels(X, N);
-    if lat_det eq 1 then
-        ker_reds := getSLReductionKernels(ker_reds, N);
-    end if;
+    ker_reds := (lat_det eq 0) select getGLReductionKernels(X, N) else getSLReductionKernels(X, N);
     label_lower := {};
     for i in [1..#Lat] do
         vprint ShimuraCurves, 3: "i = ", i;
-        SetLevel(Lat, i, X, ker_reds, N, ambord, ~label_lower : lat_det := lat_det);
+        SetLevel(Lat, i, X, ker_reds, N, ~label_lower : lat_det := lat_det);
     end for;
     for lower in label_lower do
         // We need to deal with level 1 and 2 specially
@@ -144,6 +140,7 @@ intrinsic EnumerateGerbiestSurjectiveH(X::AlgQuatEnhSys, N::RngIntElt) -> SeqEnu
   O := OmodN`quaternionorder;
   Ahom := AtoGL4(Enh);
   G := GL4sub(Enh);
+  G1 := EnhancedImageGL4O1(Enh);
   KG := NormalizerKernelGL4(Enh);
   assert IsNormal(G, KG);
 
@@ -157,8 +154,12 @@ intrinsic EnumerateGerbiestSurjectiveH(X::AlgQuatEnhSys, N::RngIntElt) -> SeqEnu
   Latfull`inclusions_known := true; // We want to compute inclusion relations
   Latfull`index_bound := 0; // Even though we are restricting subgroups, it's not correctly modeled by an index bound
 
+  fake_label := Sprintf("%o.a", #G1); // The FiniteGroup code expects a label, but only the order is actually used
+  GG1 := NewLMFDBGrp(G1, fake_label);
+  AssignBasicAttributes(GG1); 
+
   Lat1 := New(SubgroupLat);
-  Lat1`Grp := GG; // Even though all the subgroups here will be contained in G1, the equivalence relation is under conjugacy in GG
+  Lat1`Grp := GG1; // Even though all the subgroups here will be contained in G1, the equivalence relation is under conjugacy in GG
   Lat1`outer_equivalence := false; // We want subgroups up to GG-conjugacy, not up to automorphism
   Lat1`inclusions_known := false; // We don't need inclusion relationship for the G1-subgroups
   Lat1`index_bound := 0; // Even though we are restricting subgroups, it's not correctly modeled by an index bound
@@ -329,7 +330,7 @@ function createRecord(H, X)
     s`aut_gerbiness:=#{GL4ToPair(x, O, Ahom)[1] : x in KG};
     s`torsion:=PrimaryAbelianInvariants(FixedSubspace(Hgp));
     s`Glabel:=GroupLabel(Hgp); // TODO: this should maybe be   N eq level select GroupLabel(Hgp) else GroupLabel(Hgp / getKernelOfReduction(OmodN, N div level, G meet ONxinGL4));
-    s`Glabel:= N eq H`level select GroupLabel(Hgp) else GroupLabel(Hgp / getGLReductionKernels(X, N)[N div H`level][1]);
+    s`Glabel:= N eq H`level select GroupLabel(Hgp) else GroupLabel(Hgp / (Hgp meet getGLReductionKernels(X, N)[N div H`level][1]));
     s`galEnd:=GroupLabel(Domain(Ahom));
     s`autmuO_norms:=aut_mu_norms;
     s`is_split:=(order eq #(Hgp meet Image(Ahom)) * #(Hgp meet ONx(Enh)));
@@ -450,30 +451,15 @@ If N in Ns, then the every integer m dividing N should be in Ns}
     t0 := Cputime();
     new_records :=  [createRecord(H, X) : H in subs];
 
-    G := EnhancedImageGL4(X`Enh[N]);
     O1_subs := [H : H in Lat1`subs | H`level in new_levels];
-    G1 := O1_subs[#O1_subs]`subgroup;
-    // Only coarse intersections H meet G1 occur in psl2label matching; build one record per
-    // G-conjugacy class of such intersections (instead of every det-trivial subgroup of G).
-    meet_subgroups := [ H`subgroup meet G1 : H in subs ];
-    meet_class_reps := [];
-    for M in meet_subgroups do
-        if not exists(R){ R : R in meet_class_reps | IsConjugate(G, M, R) } then
-        Append(~meet_class_reps, M);
-        end if;
-    end for;
-
-    ret_O1_subs := AssociativeArray(new_levels);
-    for M in new_levels do
-        ret_O1_subs[M] := [];
-    end for;
-    for H in O1_subs do
-        Append(~ret_O1_subs[H`level], createRecord(H,X));
-    end for;
+    
+    G := EnhancedImageGL4(X`Enh[N]);
+    G1 := EnhancedImageGL4O1(X`Enh[N]);
+    ret_O1_subs := [createRecord(H,X) : H in O1_subs];
     
     for idx->H in new_records do
         H1 := H`subgroup meet G1;
-        assert exists(H_O1){H_O1 : H_O1 in ret_O1_subs[H`level] | IsConjugate(G, H1, H_O1`subgroup)};
+        assert exists(H_O1){H_O1 : H_O1 in ret_O1_subs | IsConjugate(G, H1, H_O1`subgroup)};
         new_records[idx]`psl2label := H_O1`label;
         // checking we are doing the right thing at least once
         if H`label eq "6.1.1.4.0.a.1" then
