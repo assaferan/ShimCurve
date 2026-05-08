@@ -60,9 +60,10 @@ declare attributes AlgQuatEnhSys :
   mu,
   Ns_maximal, // These Ns will be computed first (to save computation time: computing at level 12 gives level 6 as a consequence
   Enh, // Associative array; Enh[N] is an AlgQuatEnh object at level N
-  Lat, // Associative array; Lat[N] is a SubgroupLat object containing subgroups at levels dividing N with surjective determinant
-  Lat1, // Associative array; Lat1[N] is a SubgroupLat object containing subgroups at levels dividing N with determinant 1
-  Transfer; // Associative array; Transfer[<N,p>] is the reduction homomorphism from GL4sub(Enh[N]) to GL4sub(Enh[N/p])
+  to_perm, // Associative array; to_perm[N] is an isomorphism from GL4sub(Enh[N]) to a permutation group
+  Lat, // Associative array; Lat[N] is a SubgroupLat object containing permutation subgroups at levels dividing N with surjective determinant
+  Lat1, // Associative array; Lat1[N] is a SubgroupLat object containing permutation subgroups at levels dividing N with determinant 1
+  Transfer; // Associative array; Transfer[<N,p>] is the reduction homomorphism from to_perm(GL4sub(Enh[N])) to to_perm(GL4sub(Enh[N/p]))
 
 intrinsic OmodNElement(OmodN::AlgQuatOrdRes, x::AlgQuatOrdElt) -> AlgQuatOrdResElt
   {Construct an element of the OmodN whose underlying element is x in O}
@@ -728,6 +729,7 @@ intrinsic SemidirectSystem(O::AlgQuatOrd, mu::AlgQuatElt, Ns_maximal::SeqEnum[Rn
     X`mu := mu;
     X`Ns_maximal := Ns_maximal;
     X`Enh := AssociativeArray();
+    X`to_perm := AssociativeArray();
     X`Lat := AssociativeArray();
     X`Lat1 := AssociativeArray();
     X`Transfer := AssociativeArray();
@@ -742,21 +744,34 @@ intrinsic EnhancedSemidirectProduct(X::AlgQuatEnhSys, N::RngIntElt) -> AlgQuatEn
     return X`Enh[N];
 end intrinsic;
 
+intrinsic PermHom(X::AlgQuatEnhSys, N::RngIntElt) -> SeqEnum
+{For N > 1, an isomorphism from the GL(4,Z/N) subgroup to a permutation group.  For N = 1, an isomorphism from }
+    if not IsDefined(X`to_perm, N) then
+        Enh := EnhancedSemidirectProduct(X, N);
+        G := GL4sub(Enh);
+        Gperm, phi := MyQuotient(G, sub<G|>);
+        Gperm, psi := MinimalDegreePermutationRepresentation(Gperm);
+        X`to_perm[N] := phi * psi;
+    end if;
+    return X`to_perm[N];
+end intrinsic;
+
 intrinsic ComputeSubs(X::AlgQuatEnhSys, N::RngIntElt) -> SeqEnum
 {Compute subgroups at level n for all divisors n of N}
     Enh := EnhancedSemidirectProduct(X, N);
-    G := GL4sub(Enh);
+    phi := PermHom(X, N);
+    Gperm := Codomain(phi);
+    KGperm := NormalizerKernelGL4(Enh) @ phi;
 
-    // TODO: map to a permutation group instead of computing in G
     t0 := Cputime();
-    subs := Subgroups(G);
+    subs := Subgroups(Gperm, KGperm);
     vprint User1: "MagmaSubgroups", Cputime() - t0;
-    return subs;
+    return subs, phi;
 end intrinsic;
 
-intrinsic ComputeLats(X::AlgQuatEnhSys, M::RngIntElt)
+intrinsic ComputeLats(X::AlgQuatEnhSys, N::RngIntElt)
 {}
-    N := 0;
+    /*N := 0;
     for mm in X`Ns_maximal do
         if IsDivisibleBy(mm, M) then
             N := mm;
@@ -764,45 +779,43 @@ intrinsic ComputeLats(X::AlgQuatEnhSys, M::RngIntElt)
         end if;
     end for;
     if N eq 0 then
-        Append(~X`Ns_maxial, M);
+        Append(~X`Ns_maximal, M);
         N := M;
-    end if;
+    end if;*/
     Enh := EnhancedSemidirectProduct(X, N);
     G := GL4sub(Enh);
+    phi := PermHom(X, N);
     Gsubs := ComputeSubs(X, N);
 
     O := X`quaternionorder;
     Ahom := AtoGL4(Enh);
     KG := NormalizerKernelGL4(Enh);
     t0 := Cputime();
-    detimages := [#getDeterminantImage(H`subgroup, O, Ahom) : H in subs];
+    detimages := [#getDeterminantImage((H`subgroup) @@ phi, O, Ahom) : H in subs];
     vprint User1: "DeterminantImages", Cputime() - t0; t0 := Cputime();
 
     phiN := EulerPhi(N);
     surjH := [subs[i] : i in [1..#subs] | detimages[i] eq phiN];
     trivH := [subs[i] : i in [1..#subs] | detimages[i] eq 1];
 
-    t0 := Cputime();
-    surj_gerby_H := [H : H in surjH | KG subset H`subgroup];
-    //print "Gerbysurj", #surj_gerby_H, #surjH;
-    triv_gerby_H := [H : H in trivH | KG subset H`subgroup];
-    //print "Gerbytriv", #triv_gerby_H, #surjH;
-    vprint User1: "Gerby", Cputime() - t0; t0 := Cputime();
-
     ker_reds := getGLReductionKernels(X, N);
-    surjLevel := [getLevel(H, ker_reds) : H in surj_gerby_H];
-    ker1_reds := getSLReductionKernels(ker_reds, N);
-    trivLevel := [getLevel(H, ker1_reds) : H in triv_gerby_H];
+    surjLevel := [getLevel(H, ker_reds, N) : H in surjH];
+    ker1_reds := getSLReductionKernels(X, N, ker_reds);
+    trivLevel := [getLevel(H, ker1_reds, N) : H in trivH];
+
+    surjLabel := ["\\N" : H in surjH];
+    trivLabel := ["\\N" : H in trivH];
 
     primes := PrimeDivisors(N);
     divN := Divisors(N);
     needed := [m : m in divN | not IsDefined(X`Lat, m)];
+    old := [m : m in divN | IsDefined(X`Lat, m)];
     Reverse(~needed);
     msubs := AssociativeArray();
     m1subs := AssociativeArray();
     for m in needed do
-        
-        Gm := GL4sub(EnhancedSemidirectProduct(X, m));
+        phim := PermHom(X, m);
+        Gm := Codomain(phim);
         fake_label := Sprintf("%o.a", #Gm); // The FiniteGroup code expects a label, but only the order is actually used
         GGm := NewLMFDBGrp(Gm, fake_label);
         L := New(SubgroupLat);
@@ -810,25 +823,92 @@ intrinsic ComputeLats(X::AlgQuatEnhSys, M::RngIntElt)
         L`outer_equivalence := false; // We want subgroups up to conjugacy, not up to automorphism
         L`inclusions_known := true; // We want to compute inclusion relations
         L`index_bound := 0; // Even though we are restricting subgroups, it's not correctly modeled by an index bound
+        L1 := New(SubgroupLat);
+        L1`Grp := GGm;
+        L1`outer_equivalence := false; // We want subgroups up to conjugacy, not up to automorphism
+        L1`inclusions_known := true; // We want to compute inclusion relations
+        L1`index_bound := 0; // Even though we are restricting subgroups, it's not correctly modeled by an index bound
         if m eq N then
-            L`subs := [SubgroupLatElement(L, surj_gerby_H[i]`subgroup : i:=i, subgroup_count:=surj_gerby_H[i]`length) : i in [1..#surj_gerby_H]];
+            L`subs := [SubgroupLatElement(L, surjH[i]`subgroup : i:=i, subgroup_count:=surjH[i]`length) : i in [1..#surjH]];
+            L1`subs := [SubgroupLatElement(L, trivH[i]`subgroup : i:=i, subgroup_count:=trivH[i]`length) : i in [1..#trivH]];
+            for i in [1..#surjH] do
+                m0 := surjLevel[i];
+                if IsDefined(X`Lat, m0) then
+                    reduction := Transfer(X, N, m0);
+                    Lm0 := X`Lat[m0];
+                    is_conj, j, conj_elt := SubgroupIdentify(Lm0, surjH[i]`subgroup : get_conjugator:=true);
+                    assert is_conj;
+                    L`subs[i]`label := Lm0`subs[j]`label;
+                    L`subs[i]`full_label := Lm0`subs[j]`full_label;
+                    // TODO: store conj_elt
+                end if;
+                L`subs[i]`level := m0;
+            end for;
+            for i in [1..#trivH] do
+                m0 := trivLevel[i];
+                if IsDefined(X`Lat1, m0) then
+                    reduction := Transfer(X, N, m0);
+                    L1m0 := X`Lat1[m0];
+                    is_conj, j, conj_elt := SubgroupIdentify(L1m0, trivH[i]`subgroup : get_conjugator:=true);
+                    assert is_conj;
+                    L1`subs[i]`label := Lm0`subs[j]`label;
+                    L1`subs[i]`full_label := Lm0`subs[j]`full_label;
+                    // TODO: store conj_elt
+                end if;
+                L1`subs[i]`level := m0;
+            end for;
+            // TODO: we want to change how levels are set, but we keep this for now for backward compatibility
+            for m0 in needed do
+                ComputeLevelsLabels(L, Enh : N:=m0, naive:=true);
+                ComputeLevelsLabels(L1, Enh : N:=m0, naive:=true);
+            end for;
         else
             p := Representative({p : p in primes | IsDivisibleBy(N, m*p)});
-            reduction_map := Transfer(X, m*p, p);
+            reduction_map := Transfer(X, m*p, m);
+            Lup := X`Lat[m*p];
+            L1up := X`Lat1[m*p];
             // We construct subgroups at level m from subgroups at level m*p
             // mpsubs := [
             //L`subs := [X`Lat[m*p]`subs[i] @ reduction_map : 
             msubs[m] := [i : i in [1..#surjLevel] | IsDivisibleBy(m, surjLevel[i])];
             m1subs[m] := [i : i in [1..#trivLevel] | IsDivisibleBy(m, trivLevel[i])];
+            L`subs := [];
+            L1`subs := [];
+            i := 1;
+            for j in [1..#Lup`subs] do
+                H := Lup`subs[j];
+                if IsDivisibleBy(m, H`level) then
+                    selt := SubgroupLatElement(L, (H`subgroup) @ reduction_map);
+                    selt`i := i;
+                    selt`i_at_level := j;
+                    selt`level := H`level;
+                    selt`shimura_label := H`shimura_label;
+                    Append(~L`subs, selt);
+                    i +:= 1;
+                end if;
+            end for;
+            i := 1;
+            for j in [1..#L1up`subs] do
+                H := L1up`subs[j];
+                if IsDivisibleBy(m, H`level) then
+                    selt := SubgroupLatElement(L1, (H`subgroup) @ reduction_map);
+                    selt`i := i;
+                    selt`i_at_level := j;
+                    selt`level := H`level;
+                    selt`shimura_label := H`shimura_label;
+                    Append(~L1`subs, selt);
+                    i +:= 1;
+                end if;
+            end for;
         end if;
+        X`Lat[m] := L;
+        X`Lat1[m] := L1;
+        // need to port labels
     end for;
-    //for m in divN do
-        
-
 end intrinsic;
 
 intrinsic Lat(X::AlgQuatEnhSys, N::RngIntElt) -> SubgroupLat
-{Return the lattice of surjective subgroups for levels dividing N}
+{Return the lattice of surjective subgroups for levels dividing N.  When called for multiple N, should be called for largest N first.}
     if not IsDefined(X`Lat, N) then
         ComputeLats(X, N);
     end if;
@@ -836,63 +916,66 @@ intrinsic Lat(X::AlgQuatEnhSys, N::RngIntElt) -> SubgroupLat
 end intrinsic;
 
 intrinsic Lat1(X::AlgQuatEnhSys, N::RngIntElt) -> SubgroupLat
-{Return the lattice of determinant 1 subgroups for levels dividing N}
+{Return the lattice of determinant 1 subgroups for levels dividing N.  When called for multiple N, should be called for largest N first.}
     if not IsDefined(X`Lat1, N) then
         ComputeLats(X, N);
     end if;
     return X`Lat1[N];
 end intrinsic;
 
-intrinsic Transfer(X::AlgQuatEnhSys, N::RngIntElt, p::RngIntElt) -> HomGrp
-{Return the reduction homomorphism from GL4sub(Enh[N]) to GL4sub(Enh[N/p]), where p is a prime dividing N}
-    if not IsDefined(X`Transfer, <N,p>) then
-        if not IsPrime(p) and IsDivisibleBy(N, p) then
-            error Sprintf("%o must be a prime dividing %o", p, N);
+intrinsic Transfer(X::AlgQuatEnhSys, N::RngIntElt, m::RngIntElt) -> HomGrp
+{Return the reduction homomorphism from to_perm(GL4sub(Enh[N])) to to_perm(GL4sub(Enh[m])), where m divides N}
+    if not IsDefined(X`Transfer, <N,m>) then
+        if not IsDivisibleBy(N, m) then
+            error Sprintf("%o must divide %o", m, N);
         end if;
-        EnhN := EnhancedSemidirectProduct(X, N);
-        G := GL4sub(EnhN);
-        if N eq p then
-            X`Transfer[<N,p>] := GL4ToAutmu(EnhN);
+        phiN := PermHom(X, N);
+        phiNm := PermHom(X, m);
+        G := Domain(phiN);
+        Gperm := Codomain(phiN);
+        H := Domain(phiNm);
+        Hperm := Codomain(phiNm);
+        if m eq 1 then
+            glhom := GL4ToAutmu(EnhancedSemidirectProduct(X, N));
         else
-            H := GL4sub(EnhancedSemidirectProduct(X, N div p));
             Ggens := [G.i : i in [1..Ngens(G)]];
-            X`Transfer[<N,p>] := hom<G -> H | [<g, ChangeRing(g, Integers(N div p))> : g in Ggens]>;
+            glhom := hom<G -> H | [<g, ChangeRing(g, Integers(m))> : g in Ggens]>;
         end if;
+        Ngens := [Gperm.i : i in [1..Ngens(Gperm)]];
+        X`Transfer[<N,m>] := hom<Gperm -> Hperm | [<g, ((g @@ phiN) @ glhom) @ phiNm> : g in Ngens]>;
     end if;
-    return X`Transfer[<N,p>];
+    return X`Transfer[<N,m>];
 end intrinsic;
 
 intrinsic getGLReductionKernels(X::AlgQuatEnhSys, N::RngIntElt) -> Assoc
 {Return the prime-power kernels of reduction from level N to N/q}
     ker_reds := AssociativeArray();
     for p in PrimeDivisors(N) do
-        // !!! TODO - change this !!!
-        // At the moment we are only using reduction modulo p, so we only populate 
-        // a single kernel of reduction (modulo p)
-        // ker_reds[p] := [Kernel(Transfer(X, N, p^k)) : k in [1..Valuation(N, p)]];
-        ker_reds[p] :=  [Kernel(Transfer(X, N, p))];
+        ker_reds[p] := [Kernel(Transfer(X, N, N div p^k)) : k in [1..Valuation(N, p)]];
     end for;
     return ker_reds;
 end intrinsic;
 
-intrinsic getSLReductionKernels(GLkers::Assoc, N::RngIntElt) -> Assoc
+intrinsic getSLReductionKernels(X::AlgQuatEnhSys, N::RngIntElt, GLkers::Assoc) -> Assoc
 {Intersects with SL(4, Zmod(N))}
     SLkers := AssociativeArray();
-    G1 := SL(4, Integers(N));
+    phiN := PermHom(X, N);
+    G1 := (SL(4, Integers(N)) meet Domain(phiN)) @ phiN;
     for p in PrimeDivisors(N) do
         SLkers[p] := [H meet G1 : H in GLkers[p]];
     end for;
     return SLkers;
 end intrinsic;
 
-intrinsic getLevel(H::GrpMat, ker_reds::Assoc) -> RngIntElt
+intrinsic getLevel(H::Grp, N::RngIntElt, ker_reds::Assoc) -> RngIntElt
 {Find the level of a given subgroup given the kernels of reduction}
-    N := Modulus(BaseRing(H));
     level := N;
     for p in PrimeDivisors(N) do
         for K in ker_reds[p] do
             if K subset H then
                 level := level div p;
+            else
+                break;
             end if;
         end for;
     end for;

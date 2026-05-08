@@ -79,7 +79,6 @@ procedure SetLevel(Lat, i, Enh, ker_reds, N, ambord, p, ~label_lower)
         end if;
     end for;
     H`genus := EnhancedGenus(RamificationData(H));
-    return;
 end procedure;
 
 intrinsic FromLowerLevel(Lat::SubgroupLat, Enh::AlgQuatEnh : naive:=false)
