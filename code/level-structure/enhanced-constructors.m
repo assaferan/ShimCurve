@@ -800,12 +800,18 @@ intrinsic ComputeLats(X::AlgQuatEnhSys, N::RngIntElt)
     trivH := [subs[i] : i in [1..#subs] | detimages[i] eq 1];
 
     ker_reds := getGLReductionKernels(X, N);
+<<<<<<< HEAD
     surjLevel := [getLevel(H, ker_reds, N) : H in surjH];
     ker1_reds := getSLReductionKernels(X, N, ker_reds);
     trivLevel := [getLevel(H, ker1_reds, N) : H in trivH];
 
     surjLabel := ["\\N" : H in surjH];
     trivLabel := ["\\N" : H in trivH];
+=======
+    surjLevel := [getLevel(H, ker_reds) : H in surj_gerby_H];
+    ker1_reds := getSLReductionKernels(X, N);
+    trivLevel := [getLevel(H, ker1_reds) : H in triv_gerby_H];
+>>>>>>> f23f2a9e92795096aabee4a5a34b9fe28b168ad0
 
     primes := PrimeDivisors(N);
     divN := Divisors(N);
@@ -959,18 +965,21 @@ intrinsic getGLReductionKernels(X::AlgQuatEnhSys, N::RngIntElt) -> Assoc
   return X`TransferKernels[N];
 end intrinsic;
 
+intrinsic EnhancedImageGL4O1(Enh::AlgQuatEnh) -> GrpMat
+{Returns Aut_mu(O) semidirect product (O/NO)^1 as a subgroup of GL(4,Z/NZ)}
+  G := Enh`GL4sub;
+  O := Enh`quaternionorder;
+  N := Enh`N;
+  G1 := Kernel(hom<G -> GL(1, Integers(N)) | [[[Norm(GL4ToPair(G.i, O, Enh`AtoGL4)[2])]] : i in [1..Ngens(G)]]>);
+  return G1;
+end intrinsic;
+
 intrinsic getSLReductionKernels(X::AlgQuatEnhSys, N::RngIntElt, GLkers::Assoc) -> Assoc
-// This is not the function we want!!!!
-// What we want is the intersection with Aut_mu(O) semidirect product (O/NO)^1
-// (i.e. where the restriction to the second factor is of norm 1)
 {Intersects with SL(4, Zmod(N))}
-    R := Integers(N);
-    G := GL(4, R);
-    Enh := X`Enh[N];
-    G1 := sub<G | SL(4, R), Image(AtoGL4(Enh))>;
+    G1 := EnhancedImageGL4O1(X`Enh[N]);
+    phiN := PermHom(X, N);
     G1 := (G1 meet Domain(phiN)) @ phiN;
     SLkers := AssociativeArray();
-    phiN := PermHom(X, N);
     for p in PrimeDivisors(N) do
         SLkers[p] := [H meet G1 : H in GLkers[p]];
     end for;
