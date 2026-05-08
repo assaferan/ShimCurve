@@ -58,7 +58,9 @@ procedure SetLevel(Lat, i, X, ker_reds, N, ~label_lower : lat_det := 0)
     Enh := X`Enh[N];
     H`Enh := Enh;
     H`level := N; // default; overridden below if from lower level
-    H`index := Lat`Grp`order div H`order;
+    top_grp := (lat_det eq 0) select EnhancedImageGL4(Enh) else EnhancedImageGL4O1(Enh);
+    top_order := #top_grp;
+    H`index := top_order div H`order;
     for p -> kerp in ker_reds do
         if kerp[1] subset H`subgroup then
             if IsDefined(Lats, N div p) then
@@ -69,6 +71,10 @@ procedure SetLevel(Lat, i, X, ker_reds, N, ~label_lower : lat_det := 0)
                 ambient_N := Modulus(BaseRing(pLat`Grp`MagmaGrp));
                 if ambient_N ne N div p then
                     Him := Him@@Transfer(X, ambient_N, ambient_N div (N div p));
+                    // When lat_det = 1, need to take back intersection
+                    if lat_det eq 1 then
+                        Him := Him meet EnhancedImageGL4O1(X`Enh[ambient_N]);
+                    end if;
                 end if;
                 Hi := SubgroupIdentify(pLat, Him);
                 HH := pLat`subs[Hi];
@@ -140,7 +146,6 @@ intrinsic EnumerateGerbiestSurjectiveH(X::AlgQuatEnhSys, N::RngIntElt) -> SeqEnu
   O := OmodN`quaternionorder;
   Ahom := AtoGL4(Enh);
   G := GL4sub(Enh);
-  G1 := EnhancedImageGL4O1(Enh);
   KG := NormalizerKernelGL4(Enh);
   assert IsNormal(G, KG);
 
@@ -154,12 +159,8 @@ intrinsic EnumerateGerbiestSurjectiveH(X::AlgQuatEnhSys, N::RngIntElt) -> SeqEnu
   Latfull`inclusions_known := true; // We want to compute inclusion relations
   Latfull`index_bound := 0; // Even though we are restricting subgroups, it's not correctly modeled by an index bound
 
-  fake_label := Sprintf("%o.a", #G1); // The FiniteGroup code expects a label, but only the order is actually used
-  GG1 := NewLMFDBGrp(G1, fake_label);
-  AssignBasicAttributes(GG1); 
-
   Lat1 := New(SubgroupLat);
-  Lat1`Grp := GG1; // Even though all the subgroups here will be contained in G1, the equivalence relation is under conjugacy in GG
+  Lat1`Grp := GG; // Even though all the subgroups here will be contained in G1, the equivalence relation is under conjugacy in GG
   Lat1`outer_equivalence := false; // We want subgroups up to GG-conjugacy, not up to automorphism
   Lat1`inclusions_known := false; // We don't need inclusion relationship for the G1-subgroups
   Lat1`index_bound := 0; // Even though we are restricting subgroups, it's not correctly modeled by an index bound
