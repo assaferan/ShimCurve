@@ -1,61 +1,111 @@
+function find_q(D, N)
+  pD := PrimeDivisors(D);
+  pN := PrimeDivisors(N);
+  resD := [(p eq 2) select 5 else Integers()!Nonsquare(GF(p))  : p in pD];
+  resN := [1 : p in pN];
+  ps := pD cat pN;
+  res := resD cat resN;
+  if 2 notin ps then
+    ps := [2] cat ps;
+    res := [1] cat res;
+  end if;
+  for i->p in ps do
+    if p eq 2 then ps[i] := 8; end if;
+  end for;
+  q := CRT(res, ps);
+  assert &and[KroneckerSymbol(q,p) eq -1 : p in pD];
+  assert &and[KroneckerSymbol(q,p) eq 1 : p in pN];
+  assert q mod 4 eq 1;
+  return q;
+end function;
+
+function eichler_order(D,N)
+  // This is needed for the construction below, I think
+  assert IsSquarefree(N);
+  q := find_q(D, N);
+  is_sqr, a := IsSquare((Integers(q)!(D*N))^(-1));
+  assert is_sqr;
+  a := Integers()!a;
+  Q := Rationals();
+  B<i,j> := QuaternionAlgebra(Q, D*N, q);
+  assert Discriminant(B) eq D;
+  basisO := [1, (1+j)/2, (i+i*j)/2, (a*D*N*j+i*j)/q];
+  O := QuaternionOrder(basisO);
+  assert IsEichler(O);
+  assert Level(O) eq N;
+  return O, basisO;
+end function;
+
+function normalizing_element_of_norm(O, basisO, d)
+  B := Algebra(O);
+  if d eq 1 then return true, O!1; end if;
+  Qx<[x]> := FunctionField(Rationals(), 4);
+  Bx, B_to_Bx := ChangeRing(B, Qx);
+  mu := &+[x[i]*B_to_Bx(basisO[i]) : i in [1..4]];
+  RHS := Matrix([Eltseq(B_to_Bx(b) * mu) : b in basisO]);
+  LHS := Matrix([Eltseq(mu * B_to_Bx(b)) : b in basisO]);
+  A := RHS^(-1)*LHS;
+  assert Denominator(A) eq Norm(mu);
+  nums := [Numerator(a) : a in Eltseq(A) | Denominator(a) eq Norm(mu)];
+  eqns := nums cat [Numerator(Norm(mu))];
+  dens := [LCM([Denominator(x) : x in Coefficients(eqn)]) : eqn in eqns];
+  int_eqns := [dens[i]*eqns[i] : i in [1..#eqns]];
+  An := AffineSpace(Universe(int_eqns));
+  S := Scheme(An, int_eqns);
+  pts_mod_p := AssociativeArray();
+  for p in PrimeDivisors(d) do
+    Sp := ChangeRing(S, GF(p));
+    pts_mod_p[p] := [[Integers() | x : x in Eltseq(P)] : P in Points(Sp)];
+  end for;
+  for p in PrimeDivisors(LCM(dens)) do
+    if (d mod p eq 0) then continue; end if; // think later how to handle p = 2
+    S := Scheme(An, [int_eqns[i] : i in [1..#dens] | dens[i] mod p eq 0]);
+    Sp := ChangeRing(S, GF(p));
+    pts_mod_p[p] := [[Integers() | x : x in Eltseq(P)] : P in Points(Sp)];
+  end for;
+  ps := [x : x in Keys(pts_mod_p)];
+  X := CartesianProduct([pts_mod_p[p] : p in ps]);
+  nrd := Norm(mu);
+  for x in X do
+    coords := [];
+    for i in [1..Dimension(An)] do
+      res := [Integers()!x[j][i] : j->p in ps];
+      Append(~coords, CRT(res, ps));
+    end for;
+    assert &and[IsIntegral(Evaluate(eqn, coords)) : eqn in eqns];
+    ev_nrd := Evaluate(nrd, coords);
+    assert IsIntegral(ev_nrd);
+    ev_nrd := Integers()!ev_nrd;
+    assert ev_nrd mod d eq 0;
+    if IsSquare(ev_nrd div d) and (ev_nrd ne 0) then
+      mu := &+[coords[i]*basisO[i] : i in [1..4]];
+      nrd_mu := Norm(mu);
+      assert IsIntegral(nrd_mu);
+      nrd_mu := Integers()!nrd_mu;
+      assert nrd_mu mod d eq 0;
+      assert IsSquare(nrd_mu div d);
+      assert mu in O;
+      print "d = ", d, "mu = ", mu, "T = ", Trace(mu)^2 / Norm(mu);
+      // We add this because it seems we want elliptic elements
+      if Trace(mu)^2 lt 4*Norm(mu) then
+        return true, O!mu;
+      end if;
+    end if;
+  end for;
+  return false, _;
+end function;
 
 intrinsic NormalizerPlusGenerators(O::AlgQuatOrd) -> SeqEnum 
-  {return generators of the positive norm elements which normalize O}
-  if Discriminant(O) eq 6 then 
-    B6<i6,j6>:=QuaternionAlgebra<Rationals() | -1,3 >;
-    B:=QuaternionAlgebra(O);
-    tr,map:=IsIsomorphic(B6,B : Isomorphism:=true);
-    assert tr;
-    B6elliptic_elts:=[3*i6 + i6*j6, 1+i6, 3+3*i6+j6+i6*j6];
-    Oelliptic_elts:=[ O!map(a) : a in B6elliptic_elts ];
-    assert Set([ Norm(a) : a in Oelliptic_elts ]) eq {2,6,12};
-
-    e2,e4,e6:=Explode(Oelliptic_elts);
-    assert IsScalar(e6^6); assert IsScalar(e4^4); assert IsScalar(e2^2);
-    assert IsScalar(&*Oelliptic_elts);
-    return Oelliptic_elts;
-  elif Discriminant(O) eq 10 then 
-    //Elkies 
-    B10<b,e>:=QuaternionAlgebra<Rationals() | -2,5 >;
-    s2:=b;
-    s2p:=2*e+5*b-b*e;
-    s2pp:=5*b-b*e;
-    s3:=2*b-e-1;
-
-    B:=QuaternionAlgebra(O);
-    tr,map:=IsIsomorphic(B10,B : Isomorphism:=true);
-    assert tr;
-    B10elliptic_elts:=[ s2,s2p,s2pp,s3];
-    assert IsScalar(&*B10elliptic_elts);
-    assert IsScalar(s2^2); assert IsScalar(s2p^2); assert IsScalar(s2pp^2); assert IsScalar(s3^3);
-    Oelliptic_elts:=[ O!map(a) : a in B10elliptic_elts ];
-    //assert Set([ Norm(a) : a in Oelliptic_elts ]) eq {2,6,12};
-    return Oelliptic_elts;
-  elif Discriminant(O) eq 15 then 
-    B15<c,e>:=QuaternionAlgebra<Rationals() | -3,5 >;
-    s2:=4*c-3*e;
-    s2p:=5*c-3*e-c*e;
-    s2pp:=20*c-9*e-7*c*e;
-    s6:=3+c;
-
-    B:=QuaternionAlgebra(O);
-    tr,map:=IsIsomorphic(B15,B : Isomorphism:=true);
-    assert tr;
-    B15elliptic_elts:=[ s2,s2p,s2pp,s6 ];
-    assert IsScalar(&*B15elliptic_elts);
-    assert IsScalar(s2^2); assert IsScalar(s2p^2); assert IsScalar(s2pp^2); assert IsScalar(s6^6);
-
-    Oelliptic_elts:=[ O!map(a) : a in B15elliptic_elts ];
-    //assert Set([ Norm(a) : a in Oelliptic_elts ]) eq {2,6,12};
-    return Oelliptic_elts;
-
-  else
-    return "oops, not written for this discriminant yet";
-  end if;
+{return generators of the positive norm elements which normalize O}
+  require IsEichler(O) : "Only implemented for Eichler orders";
+  D := Discriminant(Algebra(O));
+  N := Level(O);
+  // It seems the code assumes more than is stated here.
+  // One wants these elements to be of finite order in Bx/Qx
+  // Is this a real requirement or an artifact?
+  mus := [mu where _, mu := normalizing_element_of_norm(O, Basis(O), d) : d in HallDivisors(D*N) | d ne 1];
+  return mus;
 end intrinsic;
-
-
-
 
 intrinsic SemidirectToNormalizer(O::AlgQuatOrd,mu::AlgQuatOrdElt,h::AlgQuatEnhElt) -> AlgQuatProjElt
   {the map from the semidirect product to the normalizer.}
@@ -63,8 +113,6 @@ intrinsic SemidirectToNormalizer(O::AlgQuatOrd,mu::AlgQuatOrdElt,h::AlgQuatEnhEl
   x:=h`element[2];
   return Parent(h`element[1])!(w*x);
 end intrinsic;
-
-
 
 intrinsic SemidirectToNormalizerKernel(O::AlgQuatOrd,mu::AlgQuatOrdElt) -> SeqEnum 
   {return the kernel of the map from the enhanced semidirect product to N_B^x(O). 
@@ -103,19 +151,12 @@ intrinsic NormalizerToAutmuO(O::AlgQuatOrd,mu::AlgQuatOrdElt,a::AlgQuatOrdElt) -
   the kernel of this map (given by SemidirectToNormalizerKernel)}
   Ocirc:=EnhancedSemidirectProduct(O);
   AutFull,autmuOseq:=Aut(O,mu);
-  ker,kergen:=SemidirectToNormalizerKernel(O,mu);
-
-
-  B:=QuaternionAlgebra(O);
-  BxmodQx:=QuaternionAlgebraModuloScalars(B);
-  proja:=BxmodQx!(B!a);
-  orda:=Order(proja);
 
   //[ elt : elt in autmuOseq | elt in ker ];
 
   assert a^2/Norm(a) in O;
   assert Norm(a) gt 0;
-  W:=[];
+  
   for w in autmuOseq do 
     if IsSquare(Rationals()!Abs(Norm((w`element)^-1*a))) then
       tr,c:=IsSquare(Rationals()!Abs(Norm((w`element)^-1*a)));
@@ -123,13 +164,10 @@ intrinsic NormalizerToAutmuO(O::AlgQuatOrd,mu::AlgQuatOrdElt,a::AlgQuatOrdElt) -
       assert x in O;
       assert Norm(x) in {1,-1};
       ell:=Ocirc!<w,O!x>;
-      if Min([ i : i in [1..orda] | ell^i in ker]) eq orda then 
-        Append(~W,ell);
-        //return ell;
-      end if;
+      return ell;
     end if;
   end for;
-  return W[1];
+  
 end intrinsic;
 
 intrinsic NormalizerToAutmuO(O::AlgQuatOrd,mu::AlgQuatElt,a::AlgQuatElt) -> AlgQuatEnhElt 
@@ -191,10 +229,6 @@ intrinsic NormalizerPlusGeneratorsGL4modN(O::AlgQuatOrd,del::RngIntElt,N::RngInt
   tr,mu:=HasPolarizedElementOfDegree(O,del);
   return [ EnhancedElementInGL4modN(g,N) : g in NormalizerPlusGeneratorsEnhanced(O,mu) ];
 end intrinsic;
-
-
-
-
 
 intrinsic EnhancedEllipticElements(O::AlgQuatOrd,mu::AlgQuatOrdElt) -> SeqEnum 
   {return the elliptic elements}
