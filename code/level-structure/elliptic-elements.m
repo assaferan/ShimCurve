@@ -36,7 +36,7 @@ function eichler_order(D,N)
   return O, basisO;
 end function;
 
-function normalizing_element_of_norm(O, basisO, d)
+function normalizing_element_of_norm(O, basisO, d : Bound := 5)
   B := Algebra(O);
   if d eq 1 then return true, O!1; end if;
   Qx<[x]> := FunctionField(Rationals(), 4);
@@ -65,6 +65,10 @@ function normalizing_element_of_norm(O, basisO, d)
   end for;
   ps := [x : x in Keys(pts_mod_p)];
   X := CartesianProduct([pts_mod_p[p] : p in ps]);
+  // epsilon neighborhood of moving coordinates by d
+  // Maybe this bound would be better to be dynamic - depending on Evaluate(nrd, coords)
+  // We have nrd(mu + d epsilon) = nrd(mu) + d * Trace(mu * epsilonbar) + d^2 * nrd(epsilon)
+  E := CartesianPower([-Bound..Bound], 4);
   nrd := Norm(mu);
   for x in X do
     coords := [];
@@ -73,24 +77,27 @@ function normalizing_element_of_norm(O, basisO, d)
       Append(~coords, CRT(res, ps));
     end for;
     assert &and[IsIntegral(Evaluate(eqn, coords)) : eqn in eqns];
-    ev_nrd := Evaluate(nrd, coords);
-    assert IsIntegral(ev_nrd);
-    ev_nrd := Integers()!ev_nrd;
-    assert ev_nrd mod d eq 0;
-    if IsSquare(ev_nrd div d) and (ev_nrd ne 0) then
-      mu := &+[coords[i]*basisO[i] : i in [1..4]];
-      nrd_mu := Norm(mu);
-      assert IsIntegral(nrd_mu);
-      nrd_mu := Integers()!nrd_mu;
-      assert nrd_mu mod d eq 0;
-      assert IsSquare(nrd_mu div d);
-      assert mu in O;
-      print "d = ", d, "mu = ", mu, "T = ", Trace(mu)^2 / Norm(mu);
-      // We add this because it seems we want elliptic elements
-      if Trace(mu)^2 lt 4*Norm(mu) then
-        return true, O!mu;
+    for e in E do
+      new_coords := [coords[i] + e[i]*d : i in [1..4]];
+      ev_nrd := Evaluate(nrd, new_coords);
+      assert IsIntegral(ev_nrd);
+      ev_nrd := Integers()!ev_nrd;
+      assert ev_nrd mod d eq 0;
+      if IsSquare(ev_nrd div d) and (ev_nrd ne 0) then
+        mu := &+[new_coords[i]*basisO[i] : i in [1..4]];
+        nrd_mu := Norm(mu);
+        assert IsIntegral(nrd_mu);
+        nrd_mu := Integers()!nrd_mu;
+        assert nrd_mu mod d eq 0;
+        assert IsSquare(nrd_mu div d);
+        assert mu in O;
+        print "d = ", d, "mu = ", mu, "T = ", Trace(mu)^2 / Norm(mu);
+        // We add this because it seems we want elliptic elements
+        if Trace(mu)^2 lt 4*Norm(mu) then
+          return true, O!mu;
+        end if;
       end if;
-    end if;
+    end for;
   end for;
   return false, _;
 end function;
